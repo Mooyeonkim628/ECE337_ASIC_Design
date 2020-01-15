@@ -21,25 +21,28 @@ module comparator
 	reg lte;	
 
 	always @ (a, b) begin
+		gte = 0;
+		lte = 0;
 		if (! (a > b)) begin
 			lte = 1'b1;
 		end 
 		if (!(b > a)) begin
 			gte = 1'b1;
 		end
-
-		if (! (lte == 1'b1)) begin
-			gt = 1'b1;
-			lt = 1'b0;
-			eq = 1'b0;
-		end else if (! (gte == 1)) begin
-			gt = 1'b0;
-			lt = 1'b1;
-			eq = 1'b0;
-		end else begin
+		
+		if (lte == 1'b1 && gte == 1'b1) begin
 			gt = 1'b0;
 			lt = 1'b0;
 			eq = 1'b1;
+
+		end else if (! (lte == 1'b1)) begin
+			gt = 1'b1;
+			lt = 1'b0;
+			eq = 1'b0;
+		end else if (! (gte == 1'b1)) begin
+			gt = 1'b0;
+			lt = 1'b1;
+			eq = 1'b0;
 		end
 	end
 endmodule
