@@ -39,7 +39,7 @@ module comparator
 			gt = 1'b1;
 			lt = 1'b0;
 			eq = 1'b0;
-		end else if (! (gte == 1'b1)) begin
+		end else begin
 			gt = 1'b0;
 			lt = 1'b1;
 			eq = 1'b0;
