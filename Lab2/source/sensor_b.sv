@@ -16,9 +16,13 @@ module sensor_b
 	reg Band;
 	always_comb
 	begin
-		CorD = sensors[3] | sensors[2];
-		Band = sensors[1] & CorD;
-		error = Band | sensors[0];
+		if((sensors[2] | sensors[3]) & sensors[1]) begin
+			error = 1;
+		end else if(sensors[0]) begin
+			error = 1;
+		end else begin
+			error = 0;
+		end
 	end
 
 endmodule
