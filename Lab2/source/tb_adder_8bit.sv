@@ -38,7 +38,7 @@ module tb_adder_8bit
 	// Connect individual test input bits to a vector for easier testing
 	assign tb_a					= tb_test_inputs[7:0];
 	assign tb_b					= tb_test_inputs[15:8];
-	assign tb_carry_in	= tb_test_inputs[6];
+	assign tb_carry_in	= tb_test_inputs[16];
 	
 	// Test bench process
 	initial
@@ -63,7 +63,7 @@ module tb_adder_8bit
 			#(TEST_DELAY - 1);
 			
 			// Check the DUT's Sum output value
-			if(tb_expected_outputs[TEST_SUM_BIT] == tb_sum)
+			if(tb_expected_outputs[7:0] == tb_sum)
 			begin
 				$info("Correct Sum value for test case %d!", tb_test_case);
 			end
