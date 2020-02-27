@@ -8,7 +8,7 @@ module counter
 );
 
     flex_counter #(
-        parameter NUM_CNT_BITS = 10
+        .NUM_CNT_BITS(10)
     )
     wrap
     (

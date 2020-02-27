@@ -43,7 +43,7 @@ M_WORK_LIB := mapped_work
 
 LIB_CREATE	:= vlib
 COMPILE 		:= vlog -sv
-SIMULATE		:= vsim -Lf $(LABS_IP_LIB) -L $(GATE_LIB) -L $(GOLD_LIB) +no_glitch_msg -coverage -novopt
+SIMULATE		:= vsim -Lf $(LABS_IP_LIB) -L $(GATE_LIB) -L $(GOLD_LIB) +no_glitch_msg -coverage 
 DC_SHELL		:= dc_shell-t
 
 ##############################################################################

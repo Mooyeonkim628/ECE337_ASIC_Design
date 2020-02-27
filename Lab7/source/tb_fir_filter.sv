@@ -267,6 +267,7 @@ module tb_fir_filter();
 	// Test bench process
 	initial
 	begin
+			
 		// Initial values
 		tb_test_case_num = 0;
 		tb_n_reset = 1'b1;
@@ -288,6 +289,24 @@ module tb_fir_filter();
 		end
 		
 		// TODO: Add non standard test cases here
+		//***********************
+		// test case 3 err
+		tb_test_case_num = tb_test_case_num + 1;
+		tb_n_reset = 1'b1;
+		tb_data_ready = 1'b0;
+		tb_load_coeff = 1'b0;
+		tb_sample = 16'd0;
+
+		#(1ns);
+		reset_dut;
 		
+		load_coeff(tb_test_vectors[0].coeffs);
+		test_sample(16'd32767, 16'd0, 1,1);
+		test_sample(16'd0, 16'd0, 1,1);
+		test_sample(16'd32767, 16'd0, 1,1);
+		test_sample(16'd0, 16'd0, 1,1);
+
+
+
 	end
 endmodule
