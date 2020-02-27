@@ -197,6 +197,7 @@ module tb_rcv_block();
     // Get away from Time = 0
     #0.1; 
     
+    //****************************************
     // Test case 0: Basic Power on Reset
     tb_test_num  = 0;
     tb_test_case = "Power-on-Reset";
@@ -259,7 +260,7 @@ module tb_rcv_block();
     // Check outputs
     check_outputs(tb_test_data_read);
     
-    
+    //****************************************
     // Test case 2: Normal packet, max faster data rate
     // Synchronize to falling edge of clock to prevent timing shifts from prior test case(s)
     @(negedge tb_clk);
@@ -295,6 +296,75 @@ module tb_rcv_block();
     check_outputs(tb_test_data_read);
   
     // Append additonal test cases here (such as overrun case)
+
+    //****************************************
+    // Test case 3: framing error
+    @(negedge tb_clk);
+    tb_test_num += 1;
+    tb_test_case = "framing error";
+    
+    // Setup packet info for debugging/verificaton signals
+    tb_test_data       = 8'b01010101;
+    tb_test_stop_bit   = 1'b0;
+    tb_test_bit_period = WORST_FAST_DATA_PERIOD;
+    tb_test_data_read  = 1'b1;
+    
+    reset_dut;
+
+    // Send packet
+    send_packet(tb_test_data, tb_test_stop_bit, tb_test_bit_period);
+    tb_serial_in = 1;
+    
+    // Wait for 2 data periods to allow DUT to finish processing the packet
+    #(tb_test_bit_period * 2);
+
+    // Setup packet info for debugging/verificaton signals
+    tb_test_data       = 8'b11101001;
+    tb_test_stop_bit   = 1'b1;
+    tb_test_bit_period = WORST_FAST_DATA_PERIOD;
+    tb_test_data_read  = 1'b1;
+    
+    // Send packet
+    send_packet(tb_test_data, tb_test_stop_bit, tb_test_bit_period);
+    
+    #(tb_test_bit_period * 2);
+
+    check_outputs(tb_test_data_read);
+    
+    //****************************************
+    // Test case 4: overun error
+    @(negedge tb_clk);
+    tb_test_num += 1;
+    tb_test_case = "framing error";
+    
+    // Setup packet info for debugging/verificaton signals
+    tb_test_data       = 8'b01010101;
+    tb_test_stop_bit   = 1'b1;
+    tb_test_bit_period = WORST_FAST_DATA_PERIOD;
+    tb_test_data_read  = 1'b0;
+    
+    reset_dut;
+
+    // Send packet
+    send_packet(tb_test_data, tb_test_stop_bit, tb_test_bit_period);
+    
+    // Wait for 2 data periods to allow DUT to finish processing the packet
+    #(tb_test_bit_period * 2);
+
+       // Setup packet info for debugging/verificaton signals
+    tb_test_data       = 8'b10101010;
+    tb_test_stop_bit   = 1'b1;
+    tb_test_bit_period = WORST_FAST_DATA_PERIOD;
+    tb_test_data_read  = 1'b0;
+    
+    // Send packet
+    send_packet(tb_test_data, tb_test_stop_bit, tb_test_bit_period);
+    
+    // Wait for 2 data periods to allow DUT to finish processing the packet
+    #(tb_test_bit_period * 2);
+
+
+
     
   end
 
