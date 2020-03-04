@@ -296,15 +296,24 @@ module tb_fir_filter();
 		tb_data_ready = 1'b0;
 		tb_load_coeff = 1'b0;
 		tb_sample = 16'd0;
+		tb_test_sample_num = 0;
 
 		#(1ns);
 		reset_dut;
 		
-		load_coeff(tb_test_vectors[0].coeffs);
-		test_sample(16'd32767, 16'd0, 1,1);
+		load_coeff({{COEFF1}, {COEFF1}, {COEFF1}, {COEFF1}});
 		test_sample(16'd0, 16'd0, 1,1);
-		test_sample(16'd32767, 16'd0, 1,1);
+		test_sample(16'd65530, 16'd0, 1,1);
 		test_sample(16'd0, 16'd0, 1,1);
+		test_sample(16'd65530, 16'd0, 1,1);
+
+		
+		test_sample(16'd1, 16'd0, 1,1);
+		test_sample(16'd1, 16'd0, 1,1);
+
+		test_sample(16'd1, 16'd0, 1,1);
+
+		test_sample(16'd1, 16'd0, 1,1);
 
 
 

@@ -7,7 +7,7 @@ module controller
     input wire overflow,
     output wire cnt_up,
     output wire clear,
-    output wire modwait,
+    output reg modwait,
     output reg [2:0]op,
     output reg [3:0]src1,
     output reg [3:0]src2,
@@ -34,110 +34,153 @@ module controller
     typedef enum bit[4:0] {IDLE, COEF1, COEF_WAIT1, COEF2, COEF_WAIT2, 
     COEF3, COEF_WAIT3, COEF4, STORE, EIDLE, ZERO, SORT1, SORT2, SORT3, SORT4,
     MUL1, ADD1, MUL2, SUB2, MUL3, ADD3, MUL4, SUB4} stateType;
-    reg [3:0] out; // [cnt_up, clear, modwait, err]
-    reg [3:0] next_out;
-    reg [2:0] next_op;
-    reg [3:0] next_src1;
-    reg [3:0] next_src2;
-    reg [3:0] next_dest;
+    logic [3:0] out; // [cnt_up, clear, nothing, err]
+    logic next_modwait;
+    // reg [3:0] next_out;
+    // reg [2:0] next_op;
+    // reg [3:0] next_src1;
+    // reg [3:0] next_src2;
+    // reg [3:0] next_dest;
     stateType state;
     stateType next_state;
 
     assign cnt_up = out[3];
     assign clear = out[2];
-    assign modwait = out[1];
+    // assign modwait = out[1];
     assign err = out[0];
 
     always_ff @(posedge clk, negedge n_rst) begin
-        out <= next_out;
-        op <= next_op;
-        src1 <= next_src1;
-        src2 <= next_src2;
-        dest <= next_dest;
-        state <= next_state;
-        if(n_rst == '0) begin
-            out <= '0;
-            op <= '0;
-            src1 <= '0;
-            src2 <= '0;
-            dest <= '0;
+        
+        if(n_rst == 0) begin
+            // out <= '0;
+            // op <= '0;
+            // src1 <= '0;
+            // src2 <= '0;
+            // dest <= '0;
+            modwait <= 0;
             state <= IDLE;
+        end 
+        else begin
+            // out <= next_out;
+            modwait <= next_modwait;
+            // op <= next_op;
+            // src1 <= next_src1;
+            // src2 <= next_src2;
+            // dest <= next_dest;
+            state <= next_state;
         end
     end
 
     always_comb begin
         next_state = state;
+        next_modwait = modwait;
         case(state)
             IDLE: begin
                 if(lc)
                     next_state = COEF1;
                 if(dr)
                     next_state = STORE;
+                next_modwait = 0;
             end
-            COEF1: 
+            COEF1: begin
                 next_state = COEF_WAIT1;
+                next_modwait = 1;
+            end
             COEF_WAIT1: begin
+                next_modwait = 0;
                 if(lc)
                     next_state = COEF2;
             end
-            COEF2: 
+            COEF2: begin
                 next_state = COEF_WAIT2;
+                next_modwait = 1;
+            end
             COEF_WAIT2: begin
+                next_modwait = 0;
                 if(lc)
                     next_state = COEF3;
             end
-            COEF3:
+            COEF3: begin
                 next_state = COEF_WAIT3;
+                next_modwait = 1;
+            end
             COEF_WAIT3: begin
+                next_modwait = 0;
                 if(lc)
                     next_state = COEF4;
             end
-            COEF4:
+            COEF4: begin
                 next_state = IDLE;
+                next_modwait = 1;
+            end
             STORE: begin
+                next_modwait = 1;
                 next_state = ZERO;
                 if(!dr)
                     next_state = EIDLE;
             end
-            ZERO:
+            ZERO: begin
                 next_state = SORT1;
-            SORT1:
+                next_modwait = 1;
+            end
+            SORT1: begin
                 next_state = SORT2;
-            SORT2:
+                next_modwait = 1;
+            end
+            SORT2: begin
                 next_state = SORT3;
-            SORT3:
+                next_modwait = 1;
+            end
+            SORT3: begin
                 next_state = SORT4;
-            SORT4:
+                next_modwait = 1;
+            end
+            SORT4: begin
                 next_state = MUL1;
-            MUL1:
+                next_modwait = 1;
+            end
+            MUL1: begin
                 next_state = ADD1;
+                next_modwait = 1;
+            end
             ADD1: begin
                 next_state = MUL2;
+                next_modwait = 1;
                 if(overflow)
                     next_state = EIDLE;
             end
-            MUL2:
+            MUL2: begin
                 next_state = SUB2;
+                next_modwait = 1;
+            end
             SUB2: begin
+                next_modwait = 1;
                 next_state = MUL3;
                 if(overflow)
                     next_state = EIDLE;
             end
-            MUL3:
+            MUL3: begin 
                 next_state = ADD3;
+                next_modwait = 1;
+            end
             ADD3: begin
                 next_state = MUL4;
+                next_modwait = 1;
                 if(overflow)
                     next_state = EIDLE;
             end
-            MUL4:
+            MUL4: begin
                 next_state = SUB4;
+                next_modwait = 1;
+            end
             SUB4: begin
+                next_modwait = 1;
                 next_state = IDLE;
                 if(overflow)
                     next_state = EIDLE;
             end
             EIDLE: begin
+                next_modwait = 0;
                 if(dr)
                     next_state = STORE;
                 if(lc)
@@ -147,143 +190,168 @@ module controller
     end
 
     always_comb begin
-        next_out = 4'b0000;
-        next_op = 3'b000;
-        next_src1 = 4'b0000;
-        next_src2 = 4'b0000;
-        next_dest =  4'b0000;
+        // next_out = 4'b0000;
+        // next_op = 3'b000;
+        // next_src1 = 4'b0000;
+        // next_src2 = 4'b0000;
+        // next_dest =  4'b0000;
+        out = 4'b0000;
+        op = '0;
+        src1 = '0;
+        src2 = '0;
+        dest = '0;
         case(state)
             IDLE: begin
-                next_out = 4'b0000;
-                next_op = NOP;
+                out = 4'b0000;
+                op = NOP;
             end
             COEF1: begin
-                next_out = 4'b0110;
-                next_op = LDR2;
-                next_dest = r6;
+                out = 4'b0110;
+                op = LDR2;
+                dest = r6;
             end
             COEF_WAIT1: begin
-                next_out = 4'b0000;
-                next_op = NOP;
+                out = 4'b0000;
+                op = NOP;
+                
             end
             COEF2: begin
-                next_out = 4'b0110;
-                next_op = LDR2;
-                next_dest = r7;
+                out = 4'b0110;
+                op = LDR2;
+                dest = r7;
+                
             end
             COEF_WAIT2: begin
-                next_out = 4'b0000;
-                next_op = NOP;
+                out = 4'b0000;
+                op = NOP;
+               
             end
             COEF3: begin
-                next_out = 4'b0110;
-                next_op = LDR2;
-                next_dest = r8;
+                out = 4'b0110;
+                op = LDR2;
+                dest = r8;
             end
             COEF_WAIT3: begin
-                next_out = 4'b0000;
-                next_op = NOP;
+                out = 4'b0000;
+                op = NOP;
+                
             end
             COEF4: begin
-                next_out = 4'b0110;
-                next_op = LDR2;
-                next_dest = r9;
+                out = 4'b0110;
+                op = LDR2;
+                dest = r9;
+                
             end
             STORE: begin
-                next_out = 4'b0010;
-                next_op = LDR1;
-                next_dest = r5;
+                out = 4'b0010;
+                op = LDR1;
+                dest = r5;
+                
             end
             ZERO: begin
-                next_out = 4'b1010;
-                next_op = SUB;
-                next_src1 = r1;
-                next_src2 = r1;
-                next_dest = r0;
+                out = 4'b1010;
+                op = SUB;
+                src1 = r1;
+                src2 = r1;
+                dest = r0;
+                
             end
             SORT1: begin
-                next_out = 4'b0010;
-                next_op = COPY;
-                next_src1 = r3;
-                next_dest = r4;
+                out = 4'b0010;
+                op = COPY;
+                src1 = r3;
+                dest = r4;
+                
             end
             SORT2: begin
-                next_out = 4'b0010;
-                next_op = COPY;
-                next_src1 = r2;
-                next_dest = r3;
+                out = 4'b0010;
+                op = COPY;
+                src1 = r2;
+                dest = r3;
+                
             end
             SORT3: begin
-                next_out = 4'b0010;
-                next_op = COPY;
-                next_src1 = r1;
-                next_dest = r2;
+                out = 4'b0010;
+                op = COPY;
+                src1 = r1;
+                dest = r2;
+                
             end
             SORT4: begin
-                next_out = 4'b0010;
-                next_op = COPY;
-                next_src1 = r5;
-                next_dest = r1;
+                out = 4'b0010;
+                op = COPY;
+                src1 = r5;
+                dest = r1;
+                
             end
             MUL1: begin
-                next_out = 4'b0010;
-                next_op = MUL;
-                next_src1 = r4;
-                next_src2 = r9;
-                next_dest = r5;
+                out = 4'b0010;
+                op = MUL;
+                src1 = r4;
+                src2 = r9;
+                dest = r5;
+                
             end
             ADD1: begin
-                next_out = 4'b0010;
-                next_op = ADD;
-                next_src1 = r0;
-                next_src2 = r5;
-                next_dest = r0;
+                out = 4'b0010;
+                op = ADD;
+                src1 = r0;
+                src2 = r5;
+                dest = r0;
+                
             end
             MUL2: begin
-                next_out = 4'b0010;
-                next_op = MUL;
-                next_src1 = r3;
-                next_src2 = r8;
-                next_dest = r5;
+                out = 4'b0010;
+                op = MUL;
+                src1 = r3;
+                src2 = r8;
+                dest = r5;
+                
             end
             SUB2: begin
-                next_out = 4'b0010;
-                next_op = SUB;
-                next_src1 = r0;
-                next_src2 = r5;
-                next_dest = r0;
+                out = 4'b0010;
+                op = SUB;
+                src1 = r0;
+                src2 = r5;
+                dest = r0;
+                
             end
             MUL3: begin
-                next_out = 4'b0010;
-                next_op = MUL;
-                next_src1 = r2;
-                next_src2 = r7;
-                next_dest = r5;
+                out = 4'b0010;
+                op = MUL;
+                src1 = r2;
+                src2 = r7;
+                dest = r5;
+                
             end
             ADD3: begin
-                next_out = 4'b0010;
-                next_op = ADD;
-                next_src1 = r0;
-                next_src2 = r5;
-                next_dest = r0;
+                out = 4'b0010;
+                op = ADD;
+                src1 = r0;
+                src2 = r5;
+                dest = r0;
+                
             end
             MUL4: begin
-                next_out = 4'b0010;
-                next_op = MUL;
-                next_src1 = r1;
-                next_src2 = r6;
-                next_dest = r5;
+                out = 4'b0010;
+                op = MUL;
+                src1 = r1;
+                src2 = r6;
+                dest = r5;
+                
             end
             SUB4: begin
-                next_out = 4'b0010;
-                next_op = SUB;
-                next_src1 = r0;
-                next_src2 = r5;
-                next_dest = r0;
+                out = 4'b0010;
+                op = SUB;
+                src1 = r0;
+                src2 = r5;
+                dest = r0;
+                
             end
             EIDLE: begin
-                next_out = 4'b0001;
-                next_op = NOP;
+                out = 4'b0001;
+                op = NOP;
+                
             end
         endcase
     end

@@ -16,7 +16,7 @@ include /home/ecegrid/a/ece337/Course_Prod/course_make_vars
 # (do not include the source folder in the name)
 # NOTE: YOU WILL NEED TO SET THIS VARIABLE'S VALUE WHEN WORKING WITH HEIRARCHICAL DESIGNS
 # AND THE AUTOMATED GRADING SYSTEM
-COMPONENT_FILES	:= counter.sv flex_counter.sv controller.sv sync_low.sv magnitude.sv
+COMPONENT_FILES	:= controller.sv counter.sv flex_counter.sv magnitude.sv sync_low.sv
 
 # Specify the name of the top level file (do not include the source folder in the name)
 # NOTE: YOU WILL NEED TO SET THIS VARIABLE'S VALUE WHEN WORKING WITH HEIRARCHICAL DESIGNS
@@ -43,7 +43,7 @@ M_WORK_LIB := mapped_work
 
 LIB_CREATE	:= vlib
 COMPILE 		:= vlog -sv
-SIMULATE		:= vsim -Lf $(LABS_IP_LIB) -L $(GATE_LIB) -L $(GOLD_LIB) +no_glitch_msg -coverage 
+SIMULATE		:= vsim -Lf $(LABS_IP_LIB) -L $(GATE_LIB) -L $(GOLD_LIB) +no_glitch_msg -coverage -voptargs="+acc" -suppress 12110
 DC_SHELL		:= dc_shell-t
 
 ##############################################################################
@@ -57,10 +57,10 @@ DC_SHELL		:= dc_shell-t
 # Designate targets that do not correspond directly to files so that they are
 # run every time they are called
 ##############################################################################
-.phony: help clean veryclean
-.phony: print_vars
-.phony: sim_full_source sim_full_mapped
-.phony: syn_mapped
+.PHONY: help clean veryclean
+.PHONY: print_vars
+.PHONY: sim_full_source sim_full_mapped
+.PHONY: syn_mapped
 
 ##############################################################################
 # Make the default target (the one called when no specific one is invoked) to
@@ -124,8 +124,9 @@ clean:
 	@rm -f analyzed/*
 	@rm -f schematic/*
 	@rm -f *.wlf *.svf transcript
-	@rm -f *.tran
-	@rm -f *.scomp *.mcomp
+	@rm -f *.*tran
+	@rm -f *.*comp
+	@rm -f do_mapping.tcl
 	@echo -e "Done\n\n"
 
 veryclean:
@@ -204,11 +205,6 @@ define CONSOLE_SIM_CMDS
 "run 15 us;	\
  quit -f"
 endef
-
-# This rule defines how to simulate the source form of the full design with the custom file io test bench
-sim_image: $(addprefix $(S_WORK_LIB)/, $(basename $(TOP_LEVEL_FILE) tb_fir_image.sv $(COMPONENT_FILES)))
-	@echo -e "Simulating Source Design with image file test bench"
-	@$(SIMULATE) -i -t ps -do "source ./scripts/image_waves.do; run 240ms" $(S_WORK_LIB).tb_fir_image
 
 # This rule defines how to simulate the source form of the full design
 sim_full_source: $(addprefix $(S_WORK_LIB)/, $(notdir $(basename $(TOP_LEVEL_FILE) $(TEST_BENCH) $(TB_HELPER_FILES) $(COMPONENT_FILES))))
@@ -295,10 +291,10 @@ MOD_NAME := $(basename $(MAIN_FILE))
 # Note: The CLOCK_NAME variable override below will need to be set to the actual
 # clock signal name for sequential/clocked designs.
 # Also have to specify to run with the c shell to force it to use the course config (.cshrc) and call course scripts 
-mapped/$(TOP_MODULE).v: SHELL := /usr/local/bin/tcsh
+mapped/$(TOP_MODULE).v: SHELL := /usr/bin/tcsh
 $(addsuffix .v, $(addprefix mapped/, $(TOP_MODULE))): mapped/%.v : source/%.sv $(addprefix source/,$(COMPONENT_FILES))
 	@echo "Synthesizing design: $@\n"
-	@$(MAKE) --no-print-directory syn_mapped MAIN_FILE='$(notdir $<)' DEP_SUB_FILES='$(COMPONENT_FILES)' CLOCK_NAME='clk' CLOCK_PERIOD='9' > $(notdir $(basename $@)).log
+	@$(MAKE) --no-print-directory syn_mapped MAIN_FILE='$(notdir $<)' DEP_SUB_FILES='$(COMPONENT_FILES)' CLOCK_NAME='$(CLOCK_NAME)' CLOCK_PERIOD='$(CLOCK_PERIOD)' > $(notdir $(basename $@)).log
 	@echo "Synthesis run attempt for $@ complete"
 	@echo "Checking synthesis attempt for errors"
 	@syschk -w $(notdir $(basename $@))
@@ -313,7 +309,7 @@ $(addsuffix .v, $(addprefix mapped/, $(TOP_MODULE))): mapped/%.v : source/%.sv $
 # dependencies and thus will resynthesize if any of them are newer as well.
 # It will pass on any of the related variables values if they were overwritten at runtime.
 # Also have to specify to run with the c shell to force it to use the course config (.cshrc) and call course scripts 
-mapped/%.v: SHELL := /usr/local/bin/tcsh
+mapped/%.v: SHELL := /usr/bin/tcsh
 mapped/%.v: source/%.sv $(addprefix source/,$(DEP_SUB_FILES))
 	@echo "Synthesizing and Compiling design: $@\n"
 	@$(MAKE) --no-print-directory syn_mapped MAIN_FILE='$*.sv' DEP_SUB_FILES='$(DEP_SUB_FILES)' CLOCK_NAME='$(CLOCK_NAME)' CLOCK_PERIOD='$(CLOCK_PERIOD)' > $*.log
