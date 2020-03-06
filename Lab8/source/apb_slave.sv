@@ -34,6 +34,8 @@ module apb_slave
 
     logic [7:0] error_value;
 
+    logic next_data_read;
+
     assign bit_period = {bit_period_1[5:0], bit_period_0};
     assign data_size = data_size_reg[3:0];
 
@@ -49,7 +51,7 @@ module apb_slave
     // read mux logic
     always_comb begin
         next_prdata = prdata;
-        data_read = 0;
+        next_data_read = 0;
         case(read_sel)
             3'd0: next_prdata = {7'd0, data_ready};
             3'd1: next_prdata = error_value;
@@ -58,7 +60,7 @@ module apb_slave
             3'd4: next_prdata = data_size_reg;
             3'd6: begin
                 next_prdata = rx_data;
-                data_read = 1;
+                next_data_read = 1;
             end 
             3'd7: next_prdata = '0;
         endcase
@@ -93,6 +95,14 @@ module apb_slave
         end
         if(pwrite && (paddr == 3'd0 || paddr == 3'd1 || paddr == 3'd6))
             pslverr = 1;
+    end
+
+    // data read reegister
+    always_ff @ (clk, n_rst) begin
+        if(n_rst == 0)
+            data_read = '0;
+        else
+            data_read = next_data_read;
     end
 
     // prdata register
