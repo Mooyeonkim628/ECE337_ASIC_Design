@@ -30,9 +30,15 @@ module apb_slave
     logic [7:0] data_size_reg;
     logic [7:0] next_data_size_reg;
     
-    logic [7:0] next_prdata;
+    // logic [7:0] next_prdata;
 
+    // read registers
     logic [7:0] error_value;
+    logic [7:0] out_error_value;
+
+    logic out_data_ready;
+
+    logic [7:0]out_rx_data;
 
     logic next_data_read;
 
@@ -50,19 +56,20 @@ module apb_slave
 
     // read mux logic
     always_comb begin
-        next_prdata = prdata;
+        // next_prdata = prdata;
         next_data_read = 0;
         case(read_sel)
-            3'd0: next_prdata = {7'd0, data_ready};
-            3'd1: next_prdata = error_value;
-            3'd2: next_prdata = bit_period_0;
-            3'd3: next_prdata = bit_period_1;
-            3'd4: next_prdata = data_size_reg;
+            3'd0: prdata = {7'd0, out_data_ready};
+            3'd1: prdata = out_error_value;
+            3'd2: prdata = bit_period_0;
+            3'd3: prdata = bit_period_1;
+            3'd4: prdata = data_size_reg;
             3'd6: begin
-                next_prdata = rx_data;
+                prdata = out_rx_data;
                 next_data_read = 1;
             end 
-            3'd7: next_prdata = '0;
+            3'd7: prdata = '0;
+            default: prdata = '0;
         endcase
 
     end
@@ -97,6 +104,30 @@ module apb_slave
             pslverr = 1;
     end
 
+    // data ready register
+    always_ff @ (clk, n_rst) begin
+        if(n_rst == 0)
+            out_data_ready = '0;
+        else
+            out_data_ready = data_ready;
+    end
+
+    // error register
+    always_ff @ (clk, n_rst) begin
+        if(n_rst == 0)
+            out_error_value = '0;
+        else
+            out_error_value = error_value;
+    end
+
+    // rx data register
+    always_ff @ (clk, n_rst) begin
+        if(n_rst == 0)
+            out_rx_data = '0;
+        else
+            out_rx_data = rx_data;
+    end
+
     // data read reegister
     always_ff @ (clk, n_rst) begin
         if(n_rst == 0)
@@ -105,13 +136,13 @@ module apb_slave
             data_read = next_data_read;
     end
 
-    // prdata register
-    always_ff @ (clk, n_rst) begin
-        if(n_rst == 0)
-            prdata = '0;
-        else
-            prdata = next_prdata;
-    end
+    // // prdata register
+    // always_ff @ (clk, n_rst) begin
+    //     if(n_rst == 0)
+    //         prdata = '0;
+    //     else
+    //         prdata = next_prdata;
+    // end
 
     // bit period 0 register
     always_ff @ (clk, n_rst) begin

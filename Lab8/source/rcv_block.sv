@@ -73,7 +73,7 @@ module rcv_block
         .clk(clk),
         .n_rst(n_rst),
         .enable_timer(enable_timer),
-        .bit_period(bit_period),
+        .bit_period(data_period),
         .data_size(data_size),
         .shift_enable(shift_strobe),
         .packet_done(packet_done)
