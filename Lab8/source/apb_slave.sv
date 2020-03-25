@@ -93,7 +93,7 @@ module apb_slave
         pslverr = 0;
         if(psel && penable && !pwrite)
             read_sel = paddr;
-        if(psel && penable && pwrite) begin
+        else if(psel && penable && pwrite) begin
             case(paddr)
                 3'd2: write_sel = 3'b001; // bit period 0
                 3'd3: write_sel = 3'b010; // bit period 1
@@ -105,47 +105,47 @@ module apb_slave
     end
 
     // data ready register
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
-            out_data_ready = '0;
+            out_data_ready <= '0;
         else
-            out_data_ready = data_ready;
+            out_data_ready <= data_ready;
     end
 
     // error register
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
-            out_error_value = '0;
+            out_error_value <= '0;
         else
-            out_error_value = error_value;
+            out_error_value <= error_value;
     end
 
     // rx data register
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
-            out_rx_data = '0;
+            out_rx_data <= '0;
         else
-            out_rx_data = rx_data;
+            out_rx_data <= rx_data;
     end
 
     // data read reegister
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
-            data_read = '0;
+            data_read <= '0;
         else
-            data_read = next_data_read;
+            data_read <= next_data_read;
     end
 
     // // prdata register
     // always_ff @ (clk, n_rst) begin
     //     if(n_rst == 0)
-    //         prdata = '0;
+    //         prdata <= '0;
     //     else
-    //         prdata = next_prdata;
+    //         prdata <= next_prdata;
     // end
 
     // bit period 0 register
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
             bit_period_0 <= '0;
         else
@@ -153,7 +153,7 @@ module apb_slave
     end
 
     // bit period 1 register
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
             bit_period_1 <= '0;
         else
@@ -161,7 +161,7 @@ module apb_slave
     end
 
     // data_size_reg register
-    always_ff @ (clk, n_rst) begin
+    always_ff @ (posedge clk, negedge n_rst) begin
         if(n_rst == 0)
             data_size_reg <= '0;
         else
