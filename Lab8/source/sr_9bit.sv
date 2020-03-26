@@ -4,8 +4,8 @@ module sr_9bit
     input wire n_rst,
     input wire shift_strobe,
     input wire serial_in,
-    output wire [7:0] packet_data,
-    output wire stop_bit
+    output logic [7:0] packet_data,
+    output logic stop_bit
 );
     reg [8:0] data;
     assign packet_data = data[7:0];

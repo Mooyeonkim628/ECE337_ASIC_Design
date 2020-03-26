@@ -34,6 +34,10 @@ localparam ADDR_RX_DATA  = 3'd6;
 localparam RESET_BIT_PERIOD = '0;
 localparam RESET_DATA_SIZE  = '0;
 
+localparam READ = 1'b0;
+localparam WRITE = 1'b1;
+
+
 //*****************************************************************************
 // Declare TB Signals (Bus Model Controls)
 //*****************************************************************************
@@ -181,7 +185,7 @@ endtask
 
 task send_packet;
     input  [7:0] data;
-    // input  stop_bit;
+    input  int data_size;
     input  time data_period;
 
     integer i;
@@ -192,9 +196,9 @@ task send_packet;
     // Send start bit
     tb_serial_in = 1'b0;
     #data_period;
-
+  
     // Send data bits
-    for(i = 0; i < 8; i = i + 1)
+    for(i = 0; i < data_size; i = i + 1)
     begin
         tb_serial_in = data[i];
         #data_period;
@@ -207,71 +211,20 @@ end
 endtask
 
 
-// Task to cleanly and consistently check DUT output values
-// task check_outputs;
-//   input string check_tag;
-// begin
-//   tb_mismatch = 1'b0;
-//   tb_check    = 1'b1;
-//   if(tb_expected_data_read == tb_data_read) begin // Check passed
-//     $info("Correct 'data_read' output %s during %s test case", check_tag, tb_test_case);
-//   end
-//   else begin // Check failed
-//     tb_mismatch = 1'b1;
-//     $error("Incorrect 'data_read' output %s during %s test case", check_tag, tb_test_case);
-//   end
-
-// //   if(tb_expected_bit_period == tb_bit_period) begin // Check passed
-// //     $info("Correct 'bit_period' output %s during %s test case", check_tag, tb_test_case);
-// //   end
-// //   else begin // Check failed
-// //     tb_mismatch = 1'b1;
-// //     $error("Incorrect 'bit_period' output %s during %s test case", check_tag, tb_test_case);
-// //   end
-
-// //   if(tb_expected_data_size == tb_data_size) begin // Check passed
-// //     $info("Correct 'data_size' output %s during %s test case", check_tag, tb_test_case);
-// //   end
-// //   else begin // Check failed
-// //     tb_mismatch = 1'b1;
-// //     $error("Incorrect 'data_size' output %s during %s test case", check_tag, tb_test_case);
-// //   end
-
-//   // Wait some small amount of time so check pulse timing is visible on waves
-//   #(0.1);
-//   tb_check =1'b0;
-// end
-// endtask
-
 task check_read_outputs;
   input string check_tag;
   input logic [7:0] expected_prdata;
 begin
   tb_mismatch = 1'b0;
   tb_check    = 1'b1;
-//   if(tb_expected_data_read == tb_data_read) begin // Check passed
-//     $info("Correct 'data_read' output %s during %s test case", check_tag, tb_test_case);
-//   end
-//   else begin // Check failed
-//     tb_mismatch = 1'b1;
-//     $error("Incorrect 'data_read' output %s during %s test case", check_tag, tb_test_case);
-//   end
 
   if(expected_prdata == tb_prdata) begin // Check passed
-    $info("Correct 'prdata' output %s during %s test case", check_tag, tb_test_case);
+    $info("Correct 'prdata' output %s during:: %s ::test case %d", check_tag, tb_test_case, tb_test_case_num);
   end
   else begin // Check failed
     tb_mismatch = 1'b1;
-    $error("Incorrect 'prdata' output %s during %s test case", check_tag, tb_test_case);
+    $error("Incorrect 'prdata' output %s during:: %s ::test case %d", check_tag, tb_test_case, tb_test_case_num);
   end
-
-//   if(tb_expected_data_size == tb_data_size) begin // Check passed
-//     $info("Correct 'data_size' output %s during %s test case", check_tag, tb_test_case);
-//   end
-//   else begin // Check failed
-//     tb_mismatch = 1'b1;
-//     $error("Incorrect 'data_size' output %s during %s test case", check_tag, tb_test_case);
-//   end
 
   // Wait some small amount of time so check pulse timing is visible on waves
   #(0.1);
@@ -289,7 +242,7 @@ begin
   enqueue_transaction(1'b1, 1'b1, ADDR_DATA_CR, dataSize, 1'b0);
   // Run the write transactions via the model
   execute_transactions(3);
-  #(0.1)
+  #(0.1);
 end
 endtask
 
@@ -382,6 +335,7 @@ initial begin
   tb_transaction_data     = '0;
   tb_transaction_error    = 1'b0;
   tb_test_bit_period = NORM_DATA_PERIOD;
+  tb_serial_in = 1;
   // Wait some time before starting first test case
   #(0.1);
 
@@ -416,12 +370,7 @@ initial begin
 //   tb_overrun_error  = 1'b0;
 //   tb_framing_error  = 1'b0;
 
-  //*****************************************************************************
-  // Test Case : Configure the Bit Period Settings
-  //*****************************************************************************
-//   // Update Navigation Info
-//   tb_test_case     = "Configure UART Bit Period Value";
-//   tb_test_case_num = tb_test_case_num + 1;
+  //*******************************************the Bit Period Settings
 
 //   // Reset the DUT to isolate from prior to isolate from prior test case
 //   reset_dut();
@@ -451,34 +400,26 @@ initial begin
   // Reset the DUT to isolate from prior to isolate from prior test case
   reset_dut();
   
-  // Enque the needed transactions (Overall period of 1000 clocks)
-//   tb_test_bit_period = 14'd1000;
+
   // Enqueue the CR Writes
-  enqueue_transaction(1'b1, 1'b1, ADDR_BIT_CR0, tb_test_bit_period[7:0], 1'b0);
-  enqueue_transaction(1'b1, 1'b1, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
+  tb_test_bit_period = 14'd10;
+  enqueue_transaction(1'b1, WRITE, ADDR_BIT_CR0, tb_test_bit_period[7:0], 1'b0);
+  enqueue_transaction(1'b1, WRITE, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
   
   // Run the write transactions via the model
   execute_transactions(2);
 
-  // Check the DUT outputs
   tb_expected_data_read = 1'b0;
-//   tb_expected_bit_period = tb_test_bit_period;
   tb_expected_data_size = RESET_DATA_SIZE;
-//   check_outputs("after attempting to configure a 1000-cycle bit period");
 
-  // Enqueue the CR Reads
-  enqueue_transaction(1'b1, 1'b0, ADDR_BIT_CR0, tb_test_bit_period[7:0], 1'b0);
+  enqueue_transaction(1'b1, READ, ADDR_BIT_CR0, tb_test_bit_period[7:0], 1'b0);
   execute_transactions(1);
-  check_read_outputs("check for pit period", tb_test_bit_period[7:0]);
+  check_read_outputs("check for pit period 0", tb_test_bit_period[7:0]); //bit period 0
 
-  enqueue_transaction(1'b1, 1'b0, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
+  enqueue_transaction(1'b1, READ, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
   execute_transactions(1);
-  check_read_outputs("check for pit period", tb_test_bit_period[13:8]);
-  // Run the read transactions via the model
-  
+  check_read_outputs("check for pit period 1", tb_test_bit_period[13:8]); //bit period 1
 
-  // Student TODO: Add more test cases here
-  // Update Navigation Info
   //*****************************************************************************
   // test case 2: configure data size
   //*****************************************************************************
@@ -486,7 +427,7 @@ initial begin
   tb_test_case_num = tb_test_case_num + 1;
   
 
-  tb_data_size = 8'd8;
+  tb_data_size = 8'd5;
   enqueue_transaction(1'b1, 1'b1, ADDR_DATA_CR, tb_data_size, 1'b0);
   execute_transactions(1);
 
@@ -499,14 +440,40 @@ initial begin
   //*****************************************************************************
   tb_test_case     = "read from uart";
   tb_test_case_num = tb_test_case_num + 1;
-  bit_stream = 8'b10101010;
-  send_packet(bit_stream, tb_test_bit_period)
-  
-  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, bit_stream, 1'b0);
-  execute_transactions(1);
-  check_read_outputs("check for data read", bit_stream);
+  bit_stream = 5'b10101;
+  send_packet(bit_stream, 5,tb_test_bit_period * CLK_PERIOD);
 
+  enqueue_transaction(1'b1, READ, ADDR_DATA_SR, 8'b1, 1'b0);
+  //execute_transactions(1);
+
+  //check_read_outputs("check for data ready", 8'b00000001);
   
+  enqueue_transaction(1'b1, READ, ADDR_RX_DATA, bit_stream, 1'b0);
+  //execute_transactions(1);
+  //check_read_outputs("check for rx data", {3'b000, bit_stream});
+
+  enqueue_transaction(1'b1, READ, ADDR_DATA_SR, 8'b0, 1'b0);
+  execute_transactions(3);
+  //check_read_outputs("check for data ready after read", {7'b0, 1'b0});
+
+  //*****************************************************************************
+  // test case 4: slave error
+  //*****************************************************************************
+  tb_test_case     = "slave error";
+  tb_test_case_num = tb_test_case_num + 1;
+
+  $info("write to read only address");
+  enqueue_transaction(1'b1, WRITE, ADDR_DATA_SR, 8'b1, 1'b1);
+  execute_transactions(1);
+
+  $info("write to NULL address");
+  enqueue_transaction(1'b1, WRITE, 3'd7, 8'b1, 1'b1);
+  execute_transactions(1);
+
+  $info("read from NULL address");
+  enqueue_transaction(1'b1, READ, 3'd7, 8'b1, 1'b1);
+  execute_transactions(1);
+
 
 end
 

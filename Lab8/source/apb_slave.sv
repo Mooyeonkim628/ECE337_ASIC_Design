@@ -20,7 +20,7 @@ module apb_slave
     logic [2:0] read_sel;
     logic [2:0] write_sel;
 
-    // registers
+    // write registers
     logic [7:0] bit_period_0;
     logic [7:0] next_bit_period_0;
 
@@ -30,13 +30,13 @@ module apb_slave
     logic [7:0] data_size_reg;
     logic [7:0] next_data_size_reg;
     
-    // logic [7:0] next_prdata;
+    logic [7:0] next_prdata;
 
     // read registers
     logic [7:0] error_value;
-    logic [7:0] out_error_value;
+    // logic [7:0] out_error_value;
 
-    logic out_data_ready;
+    // logic out_data_ready;
 
     logic [7:0]out_rx_data;
 
@@ -56,20 +56,20 @@ module apb_slave
 
     // read mux logic
     always_comb begin
-        // next_prdata = prdata;
+        next_prdata = prdata;
         next_data_read = 0;
         case(read_sel)
-            3'd0: prdata = {7'd0, out_data_ready};
-            3'd1: prdata = out_error_value;
-            3'd2: prdata = bit_period_0;
-            3'd3: prdata = bit_period_1;
-            3'd4: prdata = data_size_reg;
+            3'd0: next_prdata = {7'd0, data_ready};
+            3'd1: next_prdata = error_value;
+            3'd2: next_prdata = bit_period_0;
+            3'd3: next_prdata = bit_period_1;
+            3'd4: next_prdata = data_size_reg;
             3'd6: begin
-                prdata = out_rx_data;
+                next_prdata = out_rx_data;
                 next_data_read = 1;
             end 
-            3'd7: prdata = '0;
-            default: prdata = '0;
+            3'd7: next_prdata = prdata;
+            default: next_prdata = '0;
         endcase
 
     end
@@ -91,7 +91,7 @@ module apb_slave
         write_sel = '0;
         read_sel = 3'd7;
         pslverr = 0;
-        if(psel && penable && !pwrite)
+        if(psel && !pwrite)
             read_sel = paddr;
         else if(psel && penable && pwrite) begin
             case(paddr)
@@ -100,25 +100,27 @@ module apb_slave
                 3'd4: write_sel = 3'b100; // data size
             endcase
         end
-        if(pwrite && (paddr == 3'd0 || paddr == 3'd1 || paddr == 3'd6))
+        if(pwrite && !(paddr == 3'd2 || paddr == 3'd3 || paddr == 3'd4))
+            pslverr = 1;
+        if(!pwrite && !(paddr == 3'd0 || paddr == 3'd1 || paddr == 3'd2 || paddr == 3'd3 || paddr == 3'd4 || paddr == 3'd6))
             pslverr = 1;
     end
 
     // data ready register
-    always_ff @ (posedge clk, negedge n_rst) begin
-        if(n_rst == 0)
-            out_data_ready <= '0;
-        else
-            out_data_ready <= data_ready;
-    end
+    // always_ff @ (posedge clk, negedge n_rst) begin
+    //     if(n_rst == 0)
+    //         out_data_ready <= '0;
+    //     else
+    //         out_data_ready <= data_ready;
+    // end
 
     // error register
-    always_ff @ (posedge clk, negedge n_rst) begin
-        if(n_rst == 0)
-            out_error_value <= '0;
-        else
-            out_error_value <= error_value;
-    end
+    // always_ff @ (posedge clk, negedge n_rst) begin
+    //     if(n_rst == 0)
+    //         out_error_value <= '0;
+    //     else
+    //         out_error_value <= error_value;
+    // end
 
     // rx data register
     always_ff @ (posedge clk, negedge n_rst) begin
@@ -136,13 +138,13 @@ module apb_slave
             data_read <= next_data_read;
     end
 
-    // // prdata register
-    // always_ff @ (clk, n_rst) begin
-    //     if(n_rst == 0)
-    //         prdata <= '0;
-    //     else
-    //         prdata <= next_prdata;
-    // end
+    // prdata register
+    always_ff @ (posedge clk, negedge n_rst) begin
+        if(n_rst == 0)
+            prdata <= '0;
+        else
+            prdata <= next_prdata;
+    end
 
     // bit period 0 register
     always_ff @ (posedge clk, negedge n_rst) begin

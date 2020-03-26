@@ -410,46 +410,58 @@ initial begin
   execute_transactions(2);
 
   // data size
-  tb_data_size = 8'd8;
+  // tb_data_size = 8'd8;
   enqueue_transaction(1'b1, 1'b1, ADDR_DATA_CR, tb_data_size, 1'b0);
   execute_transactions(1);
   
+  $info("overrun err test");
   // Enque the needed transactions (Overall period of 1000 clocks)
   tb_rx_data = 8'b10000111;
   tb_overrun_error = 0;
   // Enqueue the CR Writes
-  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_rx_data, 1'b0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_ERROR_SR, 8'd0, 1'b0);
+  execute_transactions(1);
   tb_overrun_error = 1;
-  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_rx_data, 1'b0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_ERROR_SR, 8'd2, 1'b0);
+   execute_transactions(1);
 
   // Run the write transactions via the model
-  execute_transactions(2);
   tb_overrun_error = 0;
-  tb_expected_data_read  = 1'b0;
+  tb_expected_data_read  = 8'd2;
   tb_expected_bit_period = tb_test_bit_period;
   tb_expected_data_size  = tb_data_size;
-  check_outputs("overrun error");
+  // check_outputs("overrun error");
 
-
+  $info("fromming err test");
   // Enque the needed transactions (Overall period of 1000 clocks)
   tb_rx_data = 8'b10000111;
   tb_framing_error = 0;
   // Enqueue the CR Writes
-  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_rx_data, 1'b0);
+  enqueue_transaction(1'b1, 1'b0, ADDR_ERROR_SR, 8'd0, 1'b0);
+  execute_transactions(1);
   tb_framing_error = 1;
-  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_rx_data, 1'b1);
+  enqueue_transaction(1'b1, 1'b0, ADDR_ERROR_SR, 8'd1, 1'b0);
+  execute_transactions(1);
+
 
 
   // Run the write transactions via the model
-  execute_transactions(2);
   tb_framing_error = 0;
+  enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_rx_data, 1'b0);
+  execute_transactions(1);
+
   //*****************************************************************************
-  // Test Case 3: slave error test
+  // Test Case 3: slave select err test
   //*****************************************************************************
-  tb_test_case     = "slave error test";
+  tb_test_case     = "slave read test";
   tb_test_case_num = tb_test_case_num + 1;
   enqueue_transaction(1'b1, 1'b1, 0, tb_test_bit_period[7:0], 1'b1);
+  // enqueue_transaction(1'b1, 1'b1, ADDR_BIT_CR1, {2'b00, tb_test_bit_period[13:8]}, 1'b0);
   execute_transactions(1);
+
+  // enqueue_transaction(1'b1, 1'b0, ADDR_DATA_SR, tb_rx_data, 1'b0);
+  // enqueue_transaction(1'b1, 1'b0, ADDR_RX_DATA, tb_rx_data, 1'b0);
+  // enqueue_transaction(1'b1, 1'b0, ADDR_DATA_SR, tb_rx_data, 1'b0);
 
 end
 

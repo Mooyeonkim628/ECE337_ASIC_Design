@@ -20,15 +20,23 @@ module rcv_block
     wire sbc_enable;
     wire stop_bit;
     wire shift_strobe;
-    reg [7:0] packet_data;
+    logic [7:0] packet_data_out;
+    logic [7:0] packet_data_in;
 
+    always_comb begin
+        packet_data_in = packet_data_out;
+        if(data_size == 3'd5) 
+            packet_data_in = {3'b000, packet_data_out[7:3]};
+        if(data_size == 3'd7)
+            packet_data_in = {1'b0, packet_data_out[7:1]};
+    end
 
     rx_data_buff buffer
     (
         .clk(clk),
         .n_rst(n_rst),
         .load_buffer(load_buffer),
-        .packet_data(packet_data),
+        .packet_data(packet_data_in),
         .data_read(data_read),
         .rx_data(rx_data),
         .data_ready(data_ready),
@@ -64,7 +72,7 @@ module rcv_block
         .n_rst(n_rst),
         .shift_strobe(shift_strobe),
         .serial_in(serial_in),
-        .packet_data(packet_data),
+        .packet_data(packet_data_out),
         .stop_bit(stop_bit)
     );
 

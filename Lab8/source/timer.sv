@@ -31,7 +31,7 @@ module timer
         .n_rst(n_rst),
         .clear(!enable_timer),
         .count_enable(shift_enable),
-        .rollover_val(data_size),
+        .rollover_val(data_size + 1'b1),
         .count_out(),
         .rollover_flag(packet_done)
     );
