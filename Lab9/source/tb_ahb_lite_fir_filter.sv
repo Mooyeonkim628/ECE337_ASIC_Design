@@ -8,7 +8,7 @@
 
 `timescale 1ns / 10ps
 
-module tb_ahb_lite_slave();
+module tb_ahb_lite_fir_filter();
 
 // Timing related constants
 localparam CLK_PERIOD = 10;
@@ -32,6 +32,15 @@ localparam ADDR_COEF_F1 = 4'h8;
 localparam ADDR_COEF_F2 = 4'ha;
 localparam ADDR_COEF_F3 = 4'hc;
 localparam ADDR_COEF_SET    = 4'd14; // Coeff Set Confirmation
+
+// Define our custom test vector type
+typedef struct
+{
+  reg [16:0] coeffs[3:0];
+  reg [16:0] samples[3:0];
+  reg [16:0] results[3:0];
+  reg errors[3:0];
+} testVector;
 
 // AHB-Lite-Slave reset value constants
 // Student TODO: Update these based on the reset values for your config registers
@@ -213,7 +222,7 @@ endtask
 task configure;
   input [16:0] coeff [3:0];
 begin
-  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F0, ceoff[0], NOERR, SIZE_1);
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F0, coeff[0], NOERR, SIZE_1);
   enqueue_transaction(1'b1, WRITE, ADDR_COEF_F1, coeff[1], NOERR, SIZE_1);
   enqueue_transaction(1'b1, WRITE, ADDR_COEF_F2, coeff[2], NOERR, SIZE_1);
   enqueue_transaction(1'b1, WRITE, ADDR_COEF_F3, coeff[3], NOERR, SIZE_1);
@@ -226,9 +235,9 @@ task test_stream;
   input testVector tv;
   integer s;
 begin
-  configure(tv.coeff);
+  configure(tv.coeffs);
   for(s = 0; s < 4; s++) begin
-    test_sample(tv.samples, tv.results, tv. errors);
+    test_sample(tv.samples[s], tv.results[s], tv.errors[s]);
   end
 end
 endtask
@@ -242,8 +251,14 @@ task test_sample;
   input expected_err;
 begin
   enqueue_transaction(1'b1, WRITE, ADDR_SAMPLE, sample_value, NOERR, SIZE_1);
+  execute_transactions(1);
+
+  #(CLK_PERIOD * 17);
+
   enqueue_transaction(1'b1, READ, ADDR_RESULT, expected_fir_out, NOERR, SIZE_1);
-  execute_transactions(2);
+  execute_transactions(1);
+
+  #(CLK_PERIOD);
 
 end
 endtask
@@ -324,21 +339,21 @@ end
 endtask
 
 // Task to clear/initialize all FIR-side inputs
-// task init_expected_outs;
-// begin
-//   tb_expected_data_ready    = 1'b0;
-//   tb_expected_sample        = RESET_SAMPLE;
-//   tb_expected_new_coeff_set = 1'b0;
-//   tb_expected_coeff         = RESET_COEFF;
-// end
-// endtask
+task init_expected_outs;
+begin
+  tb_expected_data_ready    = 1'b0;
+  tb_expected_sample        = RESET_SAMPLE;
+  tb_expected_new_coeff_set = 1'b0;
+  tb_expected_coeff         = RESET_COEFF;
+end
+endtask
 
 initial
 begin // TODO: Add more standard test cases here
   // Populate the test vector array to use
   tb_test_vectors = new[2];
   // Test case 0
-  tb_test_vectors[0].coeff	= {COEFF_5, COEFF1, COEFF1, COEFF_5};
+  tb_test_vectors[0].coeffs	= {COEFF_5, COEFF1, COEFF1, COEFF_5};
   tb_test_vectors[0].samples	= {16'd100, 16'd100, 16'd100, 16'd100};
   tb_test_vectors[0].results	= {16'd0, 16'd50, 16'd50 ,16'd50};
 	tb_test_vectors[0].errors		= {1'b0, 1'b0, 1'b0, 1'b0};
@@ -462,10 +477,10 @@ initial begin
   // Reset the DUT to isolate from prior test case
   reset_dut();
 
-  configure(testVector[0].coeff);
+  configure(tb_test_vectors[0].coeffs);
 
   // Give some visual spacing between check and next test case start
-  #(CLK_PERIOD * 3);
+  #(CLK_PERIOD * 20);
 
 
  //*****************************************************************************
@@ -479,17 +494,28 @@ initial begin
   // Reset the DUT to isolate from prior test case
   reset_dut();
   $info("test case %d, %s", tb_test_case_num, tb_test_case);
+  configure(tb_test_vectors[0].coeffs);
 
-  tb_test_data = 16'h0381;
+  tb_test_data = tb_test_vectors[0].samples[0];
   enqueue_transaction(1'b1, WRITE, ADDR_SAMPLE, tb_test_data, NOERR, SIZE_1);
-  enqueue_transaction(1'b1, READ, ADDR_STATUS_BUSY, tb_test_data, NOERR, SIZE_0);
+  // enqueue_transaction(1'b1, READ, ADDR_STATUS_BUSY, tb_test_data, NOERR, SIZE_0);
   //  execute_transactions(1);
   enqueue_transaction(1'b1, READ, ADDR_SAMPLE, tb_test_data, NOERR, SIZE_1);
 
-  execute_transactions(3);
+  execute_transactions(2);
   $info("check data ready!!!!!!!");
 
-  #(CLK_PERIOD * 3);
+  #(CLK_PERIOD * 20);
+
+  enqueue_transaction(1'b1, WRITE, ADDR_SAMPLE, tb_test_data, NOERR, SIZE_1);
+  execute_transactions(1);
+
+  #(CLK_PERIOD * 20);
+
+  enqueue_transaction(1'b1, WRITE, ADDR_SAMPLE, tb_test_data, NOERR, SIZE_1);
+  execute_transactions(1);
+
+  #(CLK_PERIOD * 20);
 
 
   //*****************************************************************************
@@ -507,6 +533,19 @@ initial begin
   execute_transactions(1);
 
   #(CLK_PERIOD * 3);
+
+  //*****************************************************************************
+  // Test Case 5: vector test
+  //*****************************************************************************
+  // Update Navigation Info
+  tb_test_case     = "vector test";
+  tb_test_case_num = tb_test_case_num + 1;
+  init_fir_side();
+  init_expected_outs();
+  // Reset the DUT to isolate from prior test case
+  reset_dut();
+
+  test_stream(tb_test_vectors[0]);
 
 end
 

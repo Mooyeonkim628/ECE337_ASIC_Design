@@ -9,9 +9,9 @@ module coefficient_loader
   output logic load_clr //to clear load coefficient in slave module
 );
 
-  typedef enum bit[3:0] {IDLE, LOAD0, WAIT0, LOAD1, WAIT1, LOAD2, WAIT2, LOAD3, WAIT3} stateType;
-  stateType [3:0]state;
-  stateType [3:0]next_state;
+  typedef enum bit[3:0] {IDLE, LOAD0, WAIT0, LOAD1, WAIT1, LOAD2, WAIT2, LOAD3, WAIT3, CLEAR} stateType;
+  stateType state;
+  stateType next_state;
 
   always_ff @ (posedge clk, negedge n_reset) begin
     if(n_reset == 0) begin
@@ -38,17 +38,18 @@ module coefficient_loader
       WAIT1: begin
         if(!modwait)
           next_state = LOAD2;
-        end
+      end
       LOAD2: next_state = WAIT2;
       WAIT2: begin
         if(!modwait)
           next_state = LOAD3;
-        end
+      end
       LOAD3: next_state = WAIT3;
       WAIT3: begin
         if(!modwait)
-          next_state = IDLE;
-        end
+          next_state = CLEAR;
+      end
+      CLEAR: next_state = IDLE;
     endcase
   end
 
@@ -100,6 +101,11 @@ module coefficient_loader
       WAIT3: begin
         load_coeff = 0;
         coefficient_num = 2'b11;
+        load_clr = 0;
+      end
+      CLEAR: begin
+        load_coeff = 0;
+        coefficient_num = 2'b00;
         load_clr = 1;
       end
     endcase

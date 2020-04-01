@@ -42,7 +42,7 @@ module ahb_lite_slave
 
   // read register
   logic [15:0] status;
-  assign status = {7'b0, err, 7'b0, modwait};
+  assign status = {7'b0, err, 7'b0, modwait || new_coefficient_set};
 
   // other register
   logic [3:0] wait_addr;
@@ -111,7 +111,7 @@ module ahb_lite_slave
    if(modwait) begin
      next_data_ready = 0;
    end
-   else if(hwrite && hsel && htrans == 2'd2 && (haddr == 4'h4 || haddr == 4'h5)) begin
+   else if(wait_hwrite && wait_hsel && wait_htrans == 2'd2 && (wait_addr == 4'h4 || wait_addr == 4'h5)) begin
      next_data_ready = 1;
    end
    
@@ -150,6 +150,7 @@ module ahb_lite_slave
         4'hc: hrdata = {8'b0, f3[7:0]};
         4'hd: hrdata = {8'b0, f3[15:8]};
         4'he: hrdata = new_coeff;
+        default: hrdata = '0;
       endcase
     end
     else if(wait_hsize == 1 && !wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
@@ -170,6 +171,7 @@ module ahb_lite_slave
         4'hc: hrdata = f3;
         4'hd: hrdata = f3;
         4'he: hrdata = {8'b0, new_coeff};
+        default: hrdata = '0;
       endcase
     end
     else begin

@@ -5,7 +5,7 @@ module ahb_lite_fir_filter
   input logic hsel,
   input logic [3:0] haddr,
   input logic hsize,
-  input logic [1:0] htrans
+  input logic [1:0] htrans,
   input logic hwrite,
   input logic [15:0] hwdata,
   output logic [15:0] hrdata,
@@ -20,7 +20,7 @@ module ahb_lite_fir_filter
   logic load_clr;
   logic load_coeff;
   logic [1:0] coefficient_num;
-  logic [16:0] fir_coefficient;
+  logic [15:0] fir_coefficient;
 
   fir_filter filter
   (
@@ -49,7 +49,7 @@ module ahb_lite_fir_filter
     .htrans(htrans),
     .hwrite(hwrite),
     .hwdata(hwdata),
-    .coeff_clr(coeff_clr), 
+    .coeff_clr(load_clr), 
     .sample_data(sample_data),
     .data_ready(data_ready),
     .new_coefficient_set(new_coefficient_set),
@@ -61,7 +61,7 @@ module ahb_lite_fir_filter
   coefficient_loader loader
   (
     .clk(clk),
-    .n_reset(n_reset),
+    .n_reset(n_rst),
     .new_coefficient_set(new_coefficient_set),
     .modwait(modwait),
     .load_coeff(load_coeff),

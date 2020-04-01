@@ -32,7 +32,7 @@ module fir_filter
     //     .n_rst(n_reset),
     //     .async_in(data_ready),
     //     .sync_out(data_ready_sync)
-    );
+    // );
     
 
     counter count(
