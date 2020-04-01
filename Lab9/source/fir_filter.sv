@@ -20,18 +20,18 @@ module fir_filter
     logic [3:0]dest;
     logic [16:0]alu_out;
 
-    sync_low sync1(
-        .clk(clk),
-        .n_rst(n_reset),
-        .async_in(load_coeff),
-        .sync_out(load_coeff_sync)
-    );
+    // sync_low sync1(
+    //     .clk(clk),
+    //     .n_rst(n_reset),
+    //     .async_in(load_coeff),
+    //     .sync_out(load_coeff_sync)
+    // );
 
-    sync_low sync2(
-        .clk(clk),
-        .n_rst(n_reset),
-        .async_in(data_ready),
-        .sync_out(data_ready_sync)
+    // sync_low sync2(
+    //     .clk(clk),
+    //     .n_rst(n_reset),
+    //     .async_in(data_ready),
+    //     .sync_out(data_ready_sync)
     );
     
 
@@ -46,8 +46,8 @@ module fir_filter
     controller ctrl (
         .clk(clk),
         .n_rst(n_reset),
-        .dr(data_ready_sync),
-        .lc(load_coeff_sync),
+        .dr(data_ready),
+        .lc(load_coeff),
         .overflow(overflow),
         .cnt_up(cnt_up),
         .clear(clear),

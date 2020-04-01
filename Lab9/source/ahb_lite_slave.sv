@@ -9,12 +9,12 @@ module ahb_lite_slave
   input logic hsel,
   input logic [3:0] haddr,
   input logic hsize,
-  input logic [1:0] htrans,// ??
+  input logic [1:0] htrans,
   input logic hwrite,
   input logic [15:0] hwdata,
   input logic coeff_clr, // added signal
   output logic [15:0] sample_data,
-  output logic data_ready, //??
+  output logic data_ready,
   output logic new_coefficient_set,
   output logic [15:0] fir_coefficient,
   output logic [15:0] hrdata,
@@ -75,7 +75,7 @@ module ahb_lite_slave
     next_new_coeff = new_coeff;
     next_data_ready = data_ready;
     if(wait_hsize == 0 && wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
-      $info("write debug 0");
+      // $info("write debug 0");
       case(wait_addr)
         4'h4: next_sample_data = {sample_data[15:8] ,hwdata[7:0]};
         4'h5: next_sample_data = {hwdata[7:0], sample_data[7:0]};
@@ -91,7 +91,7 @@ module ahb_lite_slave
       endcase
     end
     else if(wait_hsize == 1 && wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
-      $info("write debug 1");
+      // $info("write debug 1");
       case(wait_addr)
         4'h4: next_sample_data = hwdata;
         4'h5: next_sample_data = hwdata;
@@ -133,7 +133,7 @@ module ahb_lite_slave
   always_comb begin
     // next_hrdata = hrdata;
     if(wait_hsize == 0 && !wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
-      $info("read debug 0");
+      // $info("read debug 0");
       case(wait_addr)
         4'h0: hrdata = {8'b0, status[7:0]};
         4'h1: hrdata = {8'b0, status[15:8]};
@@ -153,7 +153,7 @@ module ahb_lite_slave
       endcase
     end
     else if(wait_hsize == 1 && !wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
-      $info("read debug 1");
+      // $info("read debug 1");
       case(wait_addr)
         4'h0: hrdata = status;
         4'h1: hrdata = status;
