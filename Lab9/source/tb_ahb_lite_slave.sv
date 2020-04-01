@@ -27,13 +27,24 @@ localparam ADDR_STATUS_BUSY = 4'd0;
 localparam ADDR_STATUS_ERR  = 4'd1;
 localparam ADDR_RESULT      = 4'd2;
 localparam ADDR_SAMPLE      = 4'd4;
-localparam ADDR_COEF_START  = 4'd6;  // F0
+localparam ADDR_COEF_F0  = 4'd6;  // F0
+localparam ADDR_COEF_F1 = 4'h8;
+localparam ADDR_COEF_F2 = 4'ha;
+localparam ADDR_COEF_F3 = 4'hc;
 localparam ADDR_COEF_SET    = 4'd14; // Coeff Set Confirmation
 
 // AHB-Lite-Slave reset value constants
 // Student TODO: Update these based on the reset values for your config registers
 localparam RESET_COEFF  = '0;
 localparam RESET_SAMPLE = '0;
+
+localparam READ = 1'b0;
+localparam WRITE = 1'b1;
+localparam NOERR = 1'b0;
+localparam ERR = 1'b1;
+localparam SIZE_0 = 1'b0;
+localparam SIZE_1 = 1'b1;
+
 
 //*****************************************************************************
 // Declare TB Signals (Bus Model Controls)
@@ -84,6 +95,7 @@ logic [DATA_MAX_BIT:0]  tb_fir_out;
 logic                   tb_modwait;
 logic                   tb_err;
 logic [1:0]             tb_coeff_num;
+logic                   tb_coeff_clr;
 // To FIR Filter or Coefficient Loader (From DUT)
 logic                   tb_data_ready;
 logic [DATA_MAX_BIT:0]  tb_sample_data;
@@ -153,6 +165,7 @@ ahb_lite_slave DUT (.clk(tb_clk), .n_rst(tb_n_rst),
                     .new_coefficient_set(tb_new_coeff_set),
                     .coefficient_num(tb_coeff_num),
                     // AHB-Lite-Slave bus signals
+                    .coeff_clr(tb_coeff_clr),
                     .hsel(tb_hsel),
                     .htrans(tb_htrans),
                     .haddr(tb_haddr),
@@ -301,6 +314,7 @@ begin
   tb_modwait   = 1'b0;
   tb_err       = 1'b0;
   tb_coeff_num = 2'd0;
+  tb_coeff_clr = 0;
 end
 endtask
 
@@ -348,7 +362,7 @@ initial begin
   reset_model();
 
   //*****************************************************************************
-  // Power-on-Reset Test Case
+  // Power-on-Reset Test Case 0
   //*****************************************************************************
   // Update Navigation Info
   tb_test_case     = "Power-on-Reset";
@@ -371,7 +385,7 @@ initial begin
   #(CLK_PERIOD * 3);
 
   //*****************************************************************************
-  // Test Case: Set a new sample value
+  // Test Case 1: Set a new sample value
   //*****************************************************************************
   // Update Navigation Info
   tb_test_case     = "Send Sample";
@@ -384,7 +398,7 @@ initial begin
 
   // Enqueue the needed transactions (Low Coeff Address => F0, just add 2 x index)
   tb_test_data = 16'd1000; 
-  enqueue_transaction(1'b1, 1'b1, ADDR_SAMPLE, tb_test_data, 1'b0, 1'b1);
+  enqueue_transaction(1'b1, WRITE, ADDR_SAMPLE, tb_test_data, NOERR, SIZE_1);
   
   // Run the transactions via the model
   execute_transactions(1);
@@ -401,7 +415,7 @@ initial begin
 
 
   //*****************************************************************************
-  // Test Case: Configure and check a Coefficient Value
+  // Test Case 2: Configure and check a Coefficient Value
   //*****************************************************************************
   // Update Navigation Info
   tb_test_case     = "Configure Coeff F3";
@@ -415,9 +429,9 @@ initial begin
   // Enqueue the needed transactions (Low Coeff Address => F0, just add 2 x index)
   tb_test_data = 16'h8000; // Fixed decimal value of 1.0
   // Enqueue the write
-  enqueue_transaction(1'b1, 1'b1, (ADDR_COEF_START + 6), tb_test_data, 1'b0, 1'b1);
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F3, tb_test_data, NOERR, SIZE_1);
   // Enqueue the 'check' read
-  enqueue_transaction(1'b1, 1'b0, (ADDR_COEF_START + 6), tb_test_data, 1'b0, 1'b1);
+  enqueue_transaction(1'b1, READ, ADDR_COEF_F3, tb_test_data, NOERR, SIZE_1);
   
   // Run the transactions via the model
   execute_transactions(2);
@@ -433,15 +447,30 @@ initial begin
   #(CLK_PERIOD * 3);
 
 
-  // Student TODO: Add more test cases here
+ //*****************************************************************************
+  // Test Case 3: coeff_clr test
+  //*****************************************************************************
   // Update Navigation Info
-  tb_test_case     = "Need More Tests!";
+  tb_test_case     = "coeff_clr test";
   tb_test_case_num = tb_test_case_num + 1;
   init_fir_side();
   init_expected_outs();
-
   // Reset the DUT to isolate from prior test case
   reset_dut();
+  $info("test case %d, %s", tb_test_case_num, tb_test_case);
+
+  tb_test_data = 16'h0001;
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_SET, tb_test_data, NOERR, SIZE_0);
+  //  execute_transactions(1);
+  enqueue_transaction(1'b1, READ, ADDR_COEF_SET, tb_test_data, NOERR, SIZE_1);
+
+  execute_transactions(2);
+  tb_coeff_clr = 1;
+  #(CLK_PERIOD * 1.5);
+  tb_coeff_clr = 0;
+  enqueue_transaction(1'b1, READ, ADDR_COEF_SET, 16'b0, NOERR, SIZE_1);
+  execute_transactions(1);
+
 
 end
 

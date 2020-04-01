@@ -9,14 +9,15 @@ module ahb_lite_slave
   input logic hsel,
   input logic [3:0] haddr,
   input logic hsize,
-  input logic [1:0] htrans,
+  input logic [1:0] htrans,// ??
   input logic hwrite,
+  input logic [15:0] hwdata,
   input logic coeff_clr, // added signal
   output logic [15:0] sample_data,
-  output logic data_ready,
+  output logic data_ready, //??
   output logic new_coefficient_set,
   output logic [15:0] fir_coefficient,
-  output logic hrdata,
+  output logic [15:0] hrdata,
   output logic hresp
 );
 
@@ -41,20 +42,26 @@ module ahb_lite_slave
 
   // read register
   logic [15:0] status;
-  assign status[0] = modwait;
-  assign status[8] = err;
+  assign status = {7'b0, err, 7'b0, modwait};
 
   // other register
   logic [3:0] wait_addr;
 
-  logic [15:0] next_hrdata;
+  logic wait_hwrite;
+  logic wait_hsel;
+  logic [1:0] wait_htrans;
+  logic wait_hsize;
+
+  // logic [15:0] next_hrdata;
+
+  logic next_data_ready;
   
   // err logic
   always_comb begin
     hresp = 0;
     if(haddr == 4'hf)
       hresp = 1;
-    else if(pwrite && (haddr == 4'h0 || haddr == 4'h1 || haddr == 4'h2 || haddr == 4'h3))
+    else if(hwrite && (haddr == 4'h0 || haddr == 4'h1 || haddr == 4'h2 || haddr == 4'h3))
       hresp = 1;
   end
 
@@ -65,93 +72,108 @@ module ahb_lite_slave
     next_f1 = f1;
     next_f2 = f2;
     next_f3 = f3;
-    next_new_coeff = new_coeff
-    if(hsize == 0) begin
+    next_new_coeff = new_coeff;
+    next_data_ready = data_ready;
+    if(wait_hsize == 0 && wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
+      $info("write debug 0");
       case(wait_addr)
-        4'h4: next_sample_data = {sample_data[15:8] ,hwrite[7:0]};
-        4'h5: next_sample_data = {hwrite[7:0], sample_data[7:0]};
-        4'h6: next_f0 = {f0[15:8], hwrite[7:0]};
-        4'h7: next_f0 = {hwrite[7:0], f0[7:0]};
-        4'h8: next_f1 = {f1[15:8], hwrite[7:0]};
-        4'h9: next_f1 = {hwrite[7:0], f1[7:0]};
-        4'ha: next_f2 = {f2[15:8], hwrite[7:0]};
-        4'hb: next_f2 = {hwrite[7:0], f2[7:0]};
-        4'hc: next_f3 = {f3[15:8], hwrite[7:0]};
-        4'hd: next_f3 = {hwrite[7:0], f3[7:0]};
-        4'he: next_new_coeff = hwrite[7:0];
+        4'h4: next_sample_data = {sample_data[15:8] ,hwdata[7:0]};
+        4'h5: next_sample_data = {hwdata[7:0], sample_data[7:0]};
+        4'h6: next_f0 = {f0[15:8], hwdata[7:0]};
+        4'h7: next_f0 = {hwdata[7:0], f0[7:0]};
+        4'h8: next_f1 = {f1[15:8], hwdata[7:0]};
+        4'h9: next_f1 = {hwdata[7:0], f1[7:0]};
+        4'ha: next_f2 = {f2[15:8], hwdata[7:0]};
+        4'hb: next_f2 = {hwdata[7:0], f2[7:0]};
+        4'hc: next_f3 = {f3[15:8], hwdata[7:0]};
+        4'hd: next_f3 = {hwdata[7:0], f3[7:0]};
+        4'he: next_new_coeff = hwdata[7:0];
       endcase
     end
-    else begin
-      case(wait_addr) begin
-        4'h4: next_sample_data = hwrite;
-        4'h5: next_sample_data = hwrite;
-        4'h6: next_f0 = hwrite;
-        4'h7: next_f0 = hwrite;
-        4'h8: next_f1 = hwrite;
-        4'h9: next_f1 = hwrite;
-        4'ha: next_f2 = hwrite;
-        4'hb: next_f2 = hwrite;
-        4'hc: next_f3 = hwrite;
-        4'hd: next_f3 = hwrite;
-        4'he: next_new_coeff = hwrite[7:0];
+    else if(wait_hsize == 1 && wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
+      $info("write debug 1");
+      case(wait_addr)
+        4'h4: next_sample_data = hwdata;
+        4'h5: next_sample_data = hwdata;
+        4'h6: next_f0 = hwdata;
+        4'h7: next_f0 = hwdata;
+        4'h8: next_f1 = hwdata;
+        4'h9: next_f1 = hwdata;
+        4'ha: next_f2 = hwdata;
+        4'hb: next_f2 = hwdata;
+        4'hc: next_f3 = hwdata;
+        4'hd: next_f3 = hwdata;
+        4'he: next_new_coeff = hwdata[7:0];
       endcase
     end
+
+   // data ready logic
+   if(modwait) begin
+     next_data_ready = 0;
+   end
+   else if(hwrite && hsel && htrans == 2'd2 && (haddr == 4'h4 || haddr == 4'h5)) begin
+     next_data_ready = 1;
+   end
+   
+
+    // cofficient load logic
+    if(coeff_clr) begin
+      next_new_coeff = '0;
+    end
+    case(coefficient_num)
+      2'd0: fir_coefficient = f0;
+      2'd1: fir_coefficient = f1;
+      2'd2: fir_coefficient = f2;
+      2'd3: fir_coefficient = f3;
+      default: fir_coefficient = '0;
+    endcase
   end
 
   // read logic 
   always_comb begin
-    next_hrdata = hrdata;
-    if(hsize == 0) begin
-      case(haddr)
-        4'h0: next_hrdata = {8'b0, status[7:0]};
-        4'h1: next_hrdata = {8'b0, status[15:8]};
-        4'h2: next_hrdata = {8'b0, fir_out[7:0]};
-        4'h3: next_hrdata = {8'b0, fir_out[15:8]};
-        4'h4: next_hrdata = {8'b0, sample_data[7:0]};
-        4'h5: next_hrdata = {8'b0, sample_data[15:8]};
-        4'h6: next_hrdata = {8'b0, f0[7:0]};
-        4'h7: next_hrdata = {8'b0, f0[15:8]};
-        4'h8: next_hrdata = {8'b0, f1[7:0]};
-        4'h9: next_hrdata = {8'b0, f1[15:8]};
-        4'ha: next_hrdata = {8'b0, f2[7:0]};
-        4'hb: next_hrdata = {8'b0, f2[15:8]};
-        4'hc: next_hrdata = {8'b0, f3[7:0]};
-        4'hd: next_hrdata = {8'b0, f3[15:8]};
-        4'he: next_hrdata = new_coeff;
+    // next_hrdata = hrdata;
+    if(wait_hsize == 0 && !wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
+      $info("read debug 0");
+      case(wait_addr)
+        4'h0: hrdata = {8'b0, status[7:0]};
+        4'h1: hrdata = {8'b0, status[15:8]};
+        4'h2: hrdata = {8'b0, fir_out[7:0]};
+        4'h3: hrdata = {8'b0, fir_out[15:8]};
+        4'h4: hrdata = {8'b0, sample_data[7:0]};
+        4'h5: hrdata = {8'b0, sample_data[15:8]};
+        4'h6: hrdata = {8'b0, f0[7:0]};
+        4'h7: hrdata = {8'b0, f0[15:8]};
+        4'h8: hrdata = {8'b0, f1[7:0]};
+        4'h9: hrdata = {8'b0, f1[15:8]};
+        4'ha: hrdata = {8'b0, f2[7:0]};
+        4'hb: hrdata = {8'b0, f2[15:8]};
+        4'hc: hrdata = {8'b0, f3[7:0]};
+        4'hd: hrdata = {8'b0, f3[15:8]};
+        4'he: hrdata = new_coeff;
+      endcase
+    end
+    else if(wait_hsize == 1 && !wait_hwrite && wait_hsel && wait_htrans == 2'd2) begin
+      $info("read debug 1");
+      case(wait_addr)
+        4'h0: hrdata = status;
+        4'h1: hrdata = status;
+        4'h2: hrdata = fir_out;
+        4'h3: hrdata = fir_out;
+        4'h4: hrdata = sample_data;
+        4'h5: hrdata = sample_data;
+        4'h6: hrdata = f0;
+        4'h7: hrdata = f0;
+        4'h8: hrdata = f1;
+        4'h9: hrdata = f1;
+        4'ha: hrdata = f2;
+        4'hb: hrdata = f2;
+        4'hc: hrdata = f3;
+        4'hd: hrdata = f3;
+        4'he: hrdata = {8'b0, new_coeff};
       endcase
     end
     else begin
-      4'h0: next_hrdata = status;
-      4'h1: next_hrdata = status;
-      4'h2: next_hrdata = fir_out;
-      4'h3: next_hrdata = fir_out;
-      4'h4: next_hrdata = sample_data;
-      4'h5: next_hrdata = sample_data;
-      4'h6: next_hrdata = f0;
-      4'h7: next_hrdata = f0;
-      4'h8: next_hrdata = f1;
-      4'h9: next_hrdata = f1;
-      4'ha: next_hrdata = f2;
-      4'hb: next_hrdata = f2;
-      4'hc: next_hrdata = f3;
-      4'hd: next_hrdata = f3;
-      4'he: next_hrdata = {8'b0, new_coeff};
-    end
-  end
-
-  // coefficient load logic
-  always_comb begin
-    next_new_coeff = new_coeff;
-    if(coeff_clr)
-      next_new_coeff = '0;
-    if(new_coeff) begin
-      case(coefficient_num)
-        2'd0: fir_coefficient = f0;
-        2'd1: fir_coefficient = f1;
-        2'd2: fir_coefficient = f2;
-        2'd3: fir_coefficient = f3;
-        default: fir_coefficient = '0;
-      endcase
+      hrdata = '0;
     end
   end
 
@@ -165,6 +187,23 @@ module ahb_lite_slave
       wait_addr <= haddr;
     end
   end
+
+  // hwrite, hsel, hsize, htrans register 
+  always_ff @ (posedge clk, negedge n_rst) begin
+    if(n_rst == 0) begin
+      wait_hwrite <= '0;
+      wait_hsel <= '0;
+      wait_htrans <= '0;
+      wait_hsize <= '0;
+    end
+    else begin
+      wait_hwrite <= hwrite;
+      wait_hsel <= hsel;
+      wait_htrans <= htrans;
+      wait_hsize <= hsize;
+    end
+  end
+
 
   // sample data register
   always_ff @ (posedge clk, negedge n_rst) begin
@@ -226,13 +265,23 @@ module ahb_lite_slave
     end
   end
 
-  // hrdata register
+  // // hrdata register
+  // always_ff @ (posedge clk, negedge n_rst) begin
+  //   if(n_rst == 0) begin
+  //     hrdata <= '0;
+  //   end
+  //   else begin
+  //     hrdata <= next_hrdata;
+  //   end
+  // end
+
+  // data ready register
   always_ff @ (posedge clk, negedge n_rst) begin
     if(n_rst == 0) begin
-      hrdata <= '0;
+      data_ready <= '0;
     end
     else begin
-      hrdata <= next_hrdata;
+      data_ready <= next_data_ready;
     end
   end
 
