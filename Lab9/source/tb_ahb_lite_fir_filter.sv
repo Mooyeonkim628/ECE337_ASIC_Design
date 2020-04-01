@@ -211,17 +211,42 @@ end
 endtask
 
 task configure;
-  input testVector vec;
+  input [16:0] coeff [3:0];
 begin
-  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F0, vec.f0, NOERR, SIZE_1);
-  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F1, vec.f1, NOERR, SIZE_1);
-  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F2, vec.f2, NOERR, SIZE_1);
-  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F3, vec.f3, NOERR, SIZE_1);
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F0, ceoff[0], NOERR, SIZE_1);
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F1, coeff[1], NOERR, SIZE_1);
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F2, coeff[2], NOERR, SIZE_1);
+  enqueue_transaction(1'b1, WRITE, ADDR_COEF_F3, coeff[3], NOERR, SIZE_1);
   enqueue_transaction(1'b1, WRITE, ADDR_COEF_SET, 16'h0001, NOERR, SIZE_1);
   execute_transactions(4);
 end
 endtask
 
+task test_stream;
+  input testVector tv;
+  integer s;
+begin
+  configure(tv.coeff);
+  for(s = 0; s < 4; s++) begin
+    test_sample(tv.samples, tv.results, tv. errors);
+  end
+end
+endtask
+
+
+task test_sample;
+  input [15:0] sample_value;
+		
+  // Expected outputs
+  input [15:0] expected_fir_out;
+  input expected_err;
+begin
+  enqueue_transaction(1'b1, WRITE, ADDR_SAMPLE, sample_value, NOERR, SIZE_1);
+  enqueue_transaction(1'b1, READ, ADDR_RESULT, expected_fir_out, NOERR, SIZE_1);
+  execute_transactions(2);
+
+end
+endtask
 
 
 //*****************************************************************************
@@ -313,11 +338,15 @@ begin // TODO: Add more standard test cases here
   // Populate the test vector array to use
   tb_test_vectors = new[2];
   // Test case 0
-  tb_test_vectors[0].f0	= COEFF_5;
-  tb_test_vectors[0].f1	= COEFF1;
-  tb_test_vectors[0].f2	= COEFF1;
-  tb_test_vectors[0].f3	= COEFF_5;
+  tb_test_vectors[0].coeff	= {COEFF_5, COEFF1, COEFF1, COEFF_5};
+  tb_test_vectors[0].samples	= {16'd100, 16'd100, 16'd100, 16'd100};
+  tb_test_vectors[0].results	= {16'd0, 16'd50, 16'd50 ,16'd50};
+	tb_test_vectors[0].errors		= {1'b0, 1'b0, 1'b0, 1'b0};
   // Test case 1
+  tb_test_vectors[1].coeffs		= tb_test_vectors[0].coeffs;
+  tb_test_vectors[1].samples	= {16'd1000, 16'd1000, 16'd100, 16'd100};
+  tb_test_vectors[1].results	= {16'd450, 16'd500, 16'd50 ,16'd50};
+  tb_test_vectors[1].errors		= {1'b0, 1'b0, 1'b0, 1'b0};
 end
 
 //*****************************************************************************
@@ -433,7 +462,7 @@ initial begin
   // Reset the DUT to isolate from prior test case
   reset_dut();
 
-  configure(testVector[0]);
+  configure(testVector[0].coeff);
 
   // Give some visual spacing between check and next test case start
   #(CLK_PERIOD * 3);
@@ -477,7 +506,7 @@ initial begin
   enqueue_transaction(1'b1, WRITE, ADDR_STATUS, 16'h0100, ERR, SIZE_1);
   execute_transactions(1);
 
-  #(clk)
+  #(CLK_PERIOD * 3);
 
 end
 
