@@ -1,6 +1,8 @@
 `timescale 1ns / 10ps
 
 module tb_edge_detect ();
+  localparam  CLK_PERIOD    = 1;
+
   logic tb_clk;
   logic tb_n_rst;
   logic tb_d_plus;
@@ -33,9 +35,9 @@ module tb_edge_detect ();
   
   edge_detect DUT (
     .clk(tb_clk),
-    .n_rst(),
-    .d_plus,
-    .d_edge
+    .n_rst(tb_n_rst),
+    .d_plus(tb_d_plus),
+    .d_edge(tb_d_edge)
   );
 
   // begin

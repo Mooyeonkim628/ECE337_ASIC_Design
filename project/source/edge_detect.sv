@@ -14,7 +14,7 @@ module edge_detect (
     d_edge = middle ^ tail;
   end
 
-  always_ff begin
+  always_ff @ (posedge clk, negedge n_rst) begin
     if(n_rst == 0) begin
       middle <= 0;
       tail <= 0;
