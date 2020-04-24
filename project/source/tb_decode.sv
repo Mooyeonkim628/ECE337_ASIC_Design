@@ -43,7 +43,7 @@ module tb_decode ();
     .d_plus(tb_d_plus),
     .shift_enable(tb_shift_enable),
     .eop(tb_eop),
-    .d_orig(tb_d_edge)
+    .d_orig(tb_d_orig)
   );
   
   task enable;
@@ -53,14 +53,18 @@ module tb_decode ();
     @(posedge tb_clk);
     tb_shift_enable = 0;
   end
+  endtask
 
   // begin
   initial begin
     tb_n_rst = 1;
     tb_d_plus = 1;
+    tb_eop = 0;
+    tb_shift_enable = 0;
     reset_dut();
     #(CLK_PERIOD * 3);
 
+    @(posedge tb_clk);
     tb_d_plus = 0;
     #(CLK_PERIOD * 4);
     enable();
@@ -68,17 +72,38 @@ module tb_decode ();
     enable();
     #(CLK_PERIOD * 3);
 
+    @(posedge tb_clk);
     tb_d_plus = 1;
     #(CLK_PERIOD * 3);
     enable();
     #(CLK_PERIOD * 8);
     enable();
     #(CLK_PERIOD * 4);
+    @(posedge tb_clk);
     tb_d_plus = 0;
     #(CLK_PERIOD * 4);
     enable();
     #(CLK_PERIOD * 4);
 
+    // eop case
+    $info("eop test case");
+    @(posedge tb_clk);
+    tb_d_plus = 1;
+    #(CLK_PERIOD * 3);
+    enable();
+    #(CLK_PERIOD * 8);
+    enable();
+    #(CLK_PERIOD * 4);
+    @(posedge tb_clk);
+    tb_d_plus = 0;
+    tb_eop = 1;
+    #(CLK_PERIOD * 4);
+    enable();
+    #(CLK_PERIOD * 16);
+    tb_d_plus = 1;
+    tb_eop = 0;
+    
+    
   end
 
 
