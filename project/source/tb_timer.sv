@@ -10,6 +10,7 @@ module tb_timer ();
   logic tb_rcving;
   logic tb_shift_enable;
   logic tb_byte_received;
+  integer tb_bit_num;
 
   task reset_dut;
   begin
@@ -38,13 +39,13 @@ module tb_timer ();
     #(CLK_PERIOD/2.0);
   end
 
-  decode DUT (
+  timer DUT (
     .clk(tb_clk),
     .n_rst(tb_n_rst),
-    .d_plus(tb_d_plus),
+    .d_edge(tb_d_edge),
+    .rcving(tb_rcving),
     .shift_enable(tb_shift_enable),
-    .eop(tb_eop),
-    .d_orig(tb_d_orig)
+    .byte_received(tb_byte_received)
   );
 
   edge_detect EDGE (
@@ -60,30 +61,44 @@ module tb_timer ();
     tb_n_rst = 1;
     tb_d_plus = 1;
     tb_rcving = 0;
+    tb_bit_num = 0;
     reset_dut();
     #(CLK_PERIOD * 3);
     tb_rcving = 1;
     @(posedge tb_clk);
     tb_d_plus = 0;
+    tb_bit_num++;
     #(CLK_PERIOD * 4);
     #(CLK_PERIOD * 4);
 
     @(posedge tb_clk);
     tb_d_plus = 1;
+    tb_bit_num++;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     #(CLK_PERIOD * 7);
+    tb_bit_num++;
     tb_d_plus = 0;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     tb_d_plus = 1;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     #(CLK_PERIOD * 7);
+    tb_bit_num++;
     #(CLK_PERIOD * 7);
+    tb_bit_num++;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     tb_rcving = 1;
     #(CLK_PERIOD * 8);
+    tb_bit_num++;
     
   end
 

@@ -6,11 +6,11 @@ module timer (
   output logic shift_enable,
   output logic byte_received
 );
-  localparam NUM_CNT_BITS = 3;
-  localparam clear = 0;
-  localparam rollover_val = 3'd7;
+  localparam NUM_CNT_BITS = 4;
+  logic clear;
+  localparam rollover_val = 4'd8;
   
-  logic count_out;
+  logic [NUM_CNT_BITS - 1:0] count_out;
   logic count_enable;
   logic rollover_flag;
   reg [NUM_CNT_BITS - 1:0] next_count;
@@ -18,10 +18,11 @@ module timer (
   
   assign count_enable = rcving;
   assign shift_enable = rollover_flag;
+  assign clear = d_edge;
 
-  always_ff @ (posedge clk, negedge n_rst) begin
-      if (n_rst == 0 || !rcving || d_edge) begin
-          count_out <= 3'd4;
+  always_ff @ (posedge clk, negedge n_rst, negedge rcving) begin
+      if (n_rst == 0 || !rcving) begin
+          count_out <= 4'd0;
           rollover_flag <= 0;
       end else begin
           count_out <= next_count;
@@ -31,7 +32,7 @@ module timer (
 
   always_comb begin
       if(clear) begin
-          next_count = 0;
+          next_count = 4'd6;
       end
       else if(count_enable) begin
           if(rollover_val == count_out) begin
@@ -58,15 +59,15 @@ module timer (
   end
 
   flex_counter #(
-    .NUM_CNT_BITS(3)
+    .NUM_CNT_BITS(4)
   )
   wrap
   (
     .clk(clk),
     .n_rst(n_rst && rcving),
-    .clear(clear),
+    .clear(1'b0),
     .count_enable(shift_enable),
-    .rollover_val(3'd7),
+    .rollover_val(4'd8),
     .rollover_flag(byte_received)
   );
 
