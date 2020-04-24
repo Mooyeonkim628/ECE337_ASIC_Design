@@ -15,14 +15,16 @@ module timer (
   logic rollover_flag;
   reg [NUM_CNT_BITS - 1:0] next_count;
   reg next_flag;
+  logic reset;
   
   assign count_enable = rcving;
   assign shift_enable = rollover_flag;
   assign clear = d_edge;
+  assign reset = (n_rst == 0) || !rcving;
 
-  always_ff @ (posedge clk, negedge n_rst, negedge rcving) begin
-      if (n_rst == 0 || !rcving) begin
-          count_out <= 4'd0;
+  always_ff @ (posedge clk, posedge reset) begin
+      if (reset) begin
+          count_out <= 4'd6;
           rollover_flag <= 0;
       end else begin
           count_out <= next_count;

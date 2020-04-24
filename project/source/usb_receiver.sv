@@ -55,7 +55,7 @@ module usb_receiver (
     .d_orig(d_orig)
   );
 
-  timer time (
+  timer time_count (
     .clk(clk),
     .n_rst(n_rst),
     .d_edge(d_edge),
@@ -75,7 +75,7 @@ module usb_receiver (
   rcu control (
     .clk(clk),
     .n_rst(n_rst),
-    .d_edge(decode),
+    .d_edge(d_edge),
     .eop(eop),
     .shift_enable(shift_enable),
     .rcv_data(rcv_data),
@@ -90,7 +90,7 @@ module usb_receiver (
     .n_rst(n_rst),
     .r_enable(r_enable),
     .w_enable(w_enable), 
-    .w_data(w_data), 
+    .w_data(rcv_data), 
     .r_data(r_data), 
     .empty(empty), 
     .full(full)

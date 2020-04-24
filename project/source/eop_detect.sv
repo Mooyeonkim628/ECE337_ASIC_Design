@@ -6,9 +6,9 @@ module eop_detect (
 
 always_comb begin
   if(d_plus == 0 && d_minus == 0)
-    eop = 0;
-  else
     eop = 1;
+  else
+    eop = 0;
 end
   
 endmodule

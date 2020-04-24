@@ -70,13 +70,14 @@ module tb_usb_receiver ();
       tb_bit_num ++;
     end
     tb_d_plus = 1;
+    #(CLK_PERIOD * 8);
   end
   endtask
 
   task send_bit;
     input logic target;
   begin
-    if(target[i] == 0) begin
+    if(target == 0) begin
         tb_d_plus =  ~tb_d_plus;
         tb_d_minus = ~tb_d_plus;
     end
@@ -88,15 +89,18 @@ module tb_usb_receiver ();
   task read_fifo;
    input logic [7:0] expected_out;
   begin
-    @(negedge tb_clk);
-    tb_r_enable = 1;
-    #(CLK_PERIOD);
-    tb_r_enable = 0;
+    
     if(tb_r_data == expected_out) begin
       $info("Correct! test case %d. %s", tb_test_num, tb_test_description);
     end else begin
       $info("!!!!!!!!!!!!! Incorrect!. test case %d. %s", tb_test_num, tb_test_description);
     end
+
+    @(negedge tb_clk);
+    tb_r_enable = 1;
+    #(CLK_PERIOD);
+    tb_r_enable = 0;
+    #(CLK_PERIOD * 3);
 
   end
   endtask
@@ -201,7 +205,7 @@ module tb_usb_receiver ();
 
     // test case 5 EOP err case
     tb_test_num++;
-    tb_test_description = "SYNC err case";
+    tb_test_description = " EOP err case";
     tb_bit_num = 0;
     reset_dut();
     #(CLK_PERIOD * 3);
@@ -213,6 +217,25 @@ module tb_usb_receiver ();
     send_bit(0);
     send_bit(0);
     send_eop();
+    #(CLK_PERIOD * 3);
+    send_sync();
+    send_eop();
+
+    //immediate another packet 
+    tb_test_num++;
+    tb_test_description = " EOP err case";
+    tb_bit_num = 0;
+    reset_dut();
+    #(CLK_PERIOD * 3);
+
+    send_sync();
+    send_eop();
+    send_sync();
+    tb_test_byte = 8'b10000001;
+    send_byte(tb_test_byte);
+    send_eop();
+    read_fifo(tb_test_byte);
+
 
     
   end
