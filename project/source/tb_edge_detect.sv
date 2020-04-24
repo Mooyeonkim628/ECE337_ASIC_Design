@@ -43,7 +43,7 @@ module tb_edge_detect ();
   // begin
   initial begin
     tb_n_rst = 1;
-    tb_d_plus = 0;
+    tb_d_plus = 1;
     reset_dut();
     #(CLK_PERIOD * 3);
     tb_d_plus = 1;

@@ -16,8 +16,8 @@ module edge_detect (
 
   always_ff @ (posedge clk, negedge n_rst) begin
     if(n_rst == 0) begin
-      middle <= 0;
-      tail <= 0;
+      middle <= 1;
+      tail <= 1;
     end
     else begin
       middle <= next_middle;
