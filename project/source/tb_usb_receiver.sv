@@ -15,6 +15,7 @@ module tb_usb_receiver ();
   logic tb_r_error;
   logic [7:0] tb_test_byte;
   logic [3:0] tb_PID;
+  logic [3:0] tb_expected_PID;
 
   integer tb_bit_num;
   integer tb_test_num;
@@ -124,6 +125,18 @@ module tb_usb_receiver ();
   end
   endtask
 
+  task check_PID;
+  input logic[3:0] expected_PID;
+  begin
+    
+    if(tb_PID == expected_PID) begin
+      $info("Correct! PID. test case %d. %s", tb_test_num, tb_test_description);
+    end else begin
+      $info("!!!!!!!!!!!!! Incorrect! PID incorrect. test case %d. %s", tb_test_num, tb_test_description);
+    end
+  end
+  endtask
+
   // Clock generation block
   always begin
     // Start with clock low to avoid false rising edge events at t=0
@@ -158,6 +171,7 @@ module tb_usb_receiver ();
     tb_r_enable = 0;
     tb_bit_num = 0;
     tb_test_num = 0;
+    tb_expected_PID = '1;
 
 
     // test case 1 reset DUT
@@ -176,7 +190,9 @@ module tb_usb_receiver ();
 
     tb_test_byte = 8'b01010101;
     send_sync();
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
     send_byte(tb_test_byte);
     send_eop();
     #(CLK_PERIOD * 3);
@@ -190,7 +206,9 @@ module tb_usb_receiver ();
     #(CLK_PERIOD * 3);
 
     send_sync();
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
     tb_test_byte = 8'b00000000;
     send_byte(tb_test_byte);
     tb_test_byte = 8'b01000000;
@@ -221,7 +239,8 @@ module tb_usb_receiver ();
     send_bit(0);
     send_bit(0);
     tb_test_byte = 8'b01000000;
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID); //not suppose to check PID
     check_err();
     send_byte(tb_test_byte);
     send_eop();
@@ -235,7 +254,9 @@ module tb_usb_receiver ();
     #(CLK_PERIOD * 3);
 
     send_sync();
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
     send_bit(0);
     send_bit(0);
     send_bit(0);
@@ -245,28 +266,34 @@ module tb_usb_receiver ();
 
     #(CLK_PERIOD * 3);
     send_sync();
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
     send_eop();
 
-    //test case 6 immediate another packet 
+    //test case 6 immediate another packet with DIP change
     tb_test_num++;
-    tb_test_description = "immediate another packet";
+    tb_test_description = "immediate another packet with DIP change";
     tb_bit_num = 0;
     reset_dut();
     #(CLK_PERIOD * 3);
 
     send_sync();
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
     send_eop();
 
     send_sync();
-    send_PID(4'b0001);
+    tb_expected_PID = 4'b1011;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
     tb_test_byte = 8'b10000001;
     send_byte(tb_test_byte);
     send_eop();
     read_fifo(tb_test_byte);
 
-    //test case 7 incorrect PID err case 
+    //test case 7 incorrect PID value err case 
     tb_test_num++;
     tb_test_description = "incorrect PID err case";
     tb_bit_num = 0;
@@ -293,6 +320,54 @@ module tb_usb_receiver ();
     send_bit(1);
     send_eop();
 
+    // test case 9 check all possible PID
+    tb_test_num++;
+    tb_test_description = "test case 9 check all possible PID";
+    tb_bit_num = 0;
+    reset_dut();
+    #(CLK_PERIOD * 3);
+
+    send_sync();
+    tb_expected_PID = 4'b0001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
+
+    send_sync();
+    tb_expected_PID = 4'b1001;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
+
+    send_sync();
+    tb_expected_PID = 4'b0011;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
+
+    send_sync();
+    tb_expected_PID = 4'b1011;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
+
+    send_sync();
+    tb_expected_PID = 4'b0010;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
+
+    send_sync();
+    tb_expected_PID = 4'b1010;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
+
+    send_sync();
+    tb_expected_PID = 4'b1110;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    send_eop();
     
   end
 
