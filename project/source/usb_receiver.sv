@@ -111,6 +111,6 @@ module usb_receiver (
     .PID_set(PID_set),
     .PID(PID),
     .PID_err(PID_err)
-  )
+  );
   
 endmodule

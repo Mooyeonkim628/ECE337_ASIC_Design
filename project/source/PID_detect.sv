@@ -7,7 +7,7 @@ module PID_detect (
   output logic [3:0] PID,
   output logic PID_err
 );
-  logic [7:0] PID_reg
+  logic [7:0] PID_reg;
   logic [7:0] next_PID_reg;
 
   assign PID = PID_reg[3:0];
@@ -30,6 +30,6 @@ module PID_detect (
     end
   end
 
-  assign PID_err = (PID == 4'b0001) || (PID == 4'b1001) || (PID == 4'b0011) || (PID == 4'b1011) || (PID == 4'b0010) || (PID == 4'b1010) || (PID == 4'b1110);
+  assign PID_err = !((PID == 4'b0001) || (PID == 4'b1001) || (PID == 4'b0011) || (PID == 4'b1011) || (PID == 4'b0010) || (PID == 4'b1010) || (PID == 4'b1110));
   
 endmodule

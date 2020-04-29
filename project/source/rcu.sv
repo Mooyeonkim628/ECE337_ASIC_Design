@@ -15,7 +15,7 @@ module rcu (
 );
   localparam SYNC_BYTE = 8'b10000000;
 
-  typedef enum bit[3:0] {IDLE, SYN, WAIT, RCV, PID_RCV, PID_WRITE, PID_CHECK, WRITE, EOP, EEOP, ERR, EIDLE} stateType;
+  typedef enum bit[3:0] {IDLE, SYN, WAIT, RCV, PID_WAIT, PID_RCV, PID_WRITE, PID_CHECK, WRITE, EOP, EEOP, ERR, EIDLE} stateType;
   stateType state;
   stateType next_state;
 
@@ -24,7 +24,7 @@ module rcu (
   assign w_enable = out[3];
   assign r_error = out[2];
   assign PID_clear = out[1];
-  assign PID_set = out[0]l;
+  assign PID_set = out[0];
 
   always_ff @(posedge clk, negedge n_rst) begin
     if (n_rst == 0) begin
@@ -44,9 +44,15 @@ module rcu (
       end
       SYN: begin
         if((rcv_data == SYNC_BYTE) && byte_received)
-          next_state = PID_RCV;
+          next_state = PID_WAIT;
         else if((rcv_data != SYNC_BYTE) && byte_received)
           next_state = ERR;
+      end
+      PID_WAIT: begin
+        if(shift_enable && !eop)
+          next_state = PID_RCV;
+        else if(shift_enable && eop)
+          next_state = EEOP;
       end
       PID_RCV: begin
         if(shift_enable && eop)
@@ -105,37 +111,40 @@ module rcu (
         out = '0;
       end
       SYN: begin
-        out = 3'b10010;
+        out = 5'b10010;
+      end
+      PID_WAIT:begin
+        out = 5'b10000;
       end
       PID_RCV: begin
-        out = 3'b10000;
+        out = 5'b10000;
       end
       PID_WRITE: begin
-        out = 3'b10001;
+        out = 5'b10001;
       end
       PID_CHECK: begin
-        out = 3'b10000;
+        out = 5'b10000;
       end
       WAIT: begin
-        out = 3'b10000;
+        out = 5'b10000;
       end
       RCV: begin
-        out = 3'b10000;
+        out = 5'b10000;
       end
       WRITE: begin
-        out = 3'b11000;
+        out = 5'b11000;
       end
       EEOP: begin
-        out = 3'b10100;
+        out = 5'b10100;
       end
       EIDLE: begin
-        out = 3'b00100;
+        out = 5'b00100;
       end
       EOP: begin
-        out = 3'b10000;
+        out = 5'b10000;
       end
       ERR: begin
-        out = 3'b10100;
+        out = 5'b10100;
       end
     endcase
   end

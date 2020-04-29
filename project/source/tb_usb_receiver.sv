@@ -61,7 +61,6 @@ module tb_usb_receiver ();
 
   task send_PID;
     input logic [3:0]PID;
-    input logic expected_PID_ERR;
   begin
     send_byte({~PID, PID});
   end
@@ -111,6 +110,17 @@ module tb_usb_receiver ();
     tb_r_enable = 0;
     #(CLK_PERIOD * 3);
 
+  end
+  endtask
+
+  task check_err;
+  begin
+    
+    if(tb_r_error == 1) begin
+      $info("Correct! in err state. test case %d. %s", tb_test_num, tb_test_description);
+    end else begin
+      $info("!!!!!!!!!!!!! Incorrect! not in err state. test case %d. %s", tb_test_num, tb_test_description);
+    end
   end
   endtask
 
@@ -212,6 +222,7 @@ module tb_usb_receiver ();
     send_bit(0);
     tb_test_byte = 8'b01000000;
     send_PID(4'b0001);
+    check_err();
     send_byte(tb_test_byte);
     send_eop();
     #(CLK_PERIOD * 8);
@@ -231,11 +242,13 @@ module tb_usb_receiver ();
     send_bit(0);
     send_bit(0);
     send_eop();
+
     #(CLK_PERIOD * 3);
     send_sync();
+    send_PID(4'b0001);
     send_eop();
 
-    //immediate another packet 
+    //test case 6 immediate another packet 
     tb_test_num++;
     tb_test_description = "immediate another packet";
     tb_bit_num = 0;
@@ -253,7 +266,7 @@ module tb_usb_receiver ();
     send_eop();
     read_fifo(tb_test_byte);
 
-    //incorrect PID err case 
+    //test case 7 incorrect PID err case 
     tb_test_num++;
     tb_test_description = "incorrect PID err case";
     tb_bit_num = 0;
@@ -266,7 +279,7 @@ module tb_usb_receiver ();
     send_byte(tb_test_byte);
     send_eop();
     
-    //EOP during PID_RCV err case 
+    //test case 8 EOP during PID_RCV err case 
     tb_test_num++;
     tb_test_description = "EOP during PID_RCV err case";
     tb_bit_num = 0;
