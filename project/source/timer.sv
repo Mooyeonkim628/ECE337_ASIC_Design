@@ -3,7 +3,7 @@ module timer (
   input logic n_rst,
   input logic d_edge,
   input logic rcving,
-  input logic stuff_bit
+  input logic stuff_bit,
   output logic shift_enable,
   output logic byte_received
 );

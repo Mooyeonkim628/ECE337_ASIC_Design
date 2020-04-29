@@ -5,9 +5,8 @@ module bit_stuffer_detect (
   input logic d_orig,
   output logic stuff_bit
 );
-  
   logic clear;
-  assign clear = ~d_orig;
+  assign clear = ~d_orig & shift_enable;
   flex_counter #(
     .NUM_CNT_BITS(3)
   )
