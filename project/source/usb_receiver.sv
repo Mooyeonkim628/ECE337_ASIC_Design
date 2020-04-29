@@ -22,6 +22,7 @@ module usb_receiver (
   logic PID_err;
   logic PID_clear;
   logic PID_set;
+  logic stuff_bit;
 
   sync_high synchronizer_high (
     .clk(clk),
@@ -64,6 +65,7 @@ module usb_receiver (
     .n_rst(n_rst),
     .d_edge(d_edge),
     .rcving(rcving),
+    .stuff_bit(stuff_bit),
     .shift_enable(shift_enable),
     .byte_received(byte_received)
   );
@@ -72,6 +74,7 @@ module usb_receiver (
     .clk(clk),
     .n_rst(n_rst),
     .shift_enable(shift_enable),
+    .stuff_bit(stuff_bit),
     .d_orig(d_orig),
     .rcv_data(rcv_data)
   );
@@ -111,6 +114,14 @@ module usb_receiver (
     .PID_set(PID_set),
     .PID(PID),
     .PID_err(PID_err)
+  );
+
+  bit_stuffer_detect stuff_detect (
+    .clk(clk),
+    .n_rst(n_rst),
+    .shift_enable(shift_enable),
+    .d_orig(d_orig),
+    .stuff_bit(stuff_bit)
   );
   
 endmodule

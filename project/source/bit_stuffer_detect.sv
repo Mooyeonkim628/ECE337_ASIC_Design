@@ -5,6 +5,7 @@ module bit_stuffer_detect (
   input logic d_orig,
   output logic stuff_bit
 );
+  
   logic clear;
   assign clear = ~d_orig;
   flex_counter #(
@@ -16,7 +17,7 @@ module bit_stuffer_detect (
     .n_rst(n_rst),
     .clear(clear),
     .count_enable(shift_enable),
-    .rollover_val(4'd7),
+    .rollover_val(4'd6),
     .rollover_flag(stuff_bit)
   );
 endmodule

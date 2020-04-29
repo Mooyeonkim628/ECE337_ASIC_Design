@@ -16,6 +16,7 @@ module tb_usb_receiver ();
   logic [7:0] tb_test_byte;
   logic [3:0] tb_PID;
   logic [3:0] tb_expected_PID;
+  logic tb_stuffing;
 
   integer tb_count_one;
   integer tb_bit_num;
@@ -46,23 +47,7 @@ module tb_usb_receiver ();
     @(posedge tb_clk);
     tb_bit_num = 0;
     for(i = 0; i < 8; i++ ) begin
-      if(target[i]) begin
-        tb_count_one++;
-      end
-      if(target[i] == 0) begin
-        tb_d_plus =  ~tb_d_plus;
-        tb_d_minus = ~tb_d_plus;
-      end
-      #(CLK_PERIOD * 8);
-      tb_bit_num ++;
-      if(!(tb_count_one < 6)) begin
-        // add a stuffing bit
-        tb_d_plus =  ~tb_d_plus;
-        tb_d_minus = ~tb_d_plus;
-        #(CLK_PERIOD * 8);
-        tb_bit_num ++;
-        tb_bit_num = 0;
-      end
+      send_bit(target[i]);
     end
   end
   endtask
@@ -106,17 +91,21 @@ module tb_usb_receiver ();
     if(target == 0) begin
         tb_d_plus =  ~tb_d_plus;
         tb_d_minus = ~tb_d_plus;
+        tb_count_one = 0;
     end
     #(CLK_PERIOD * 8);
     tb_bit_num ++;
 
     if(!(tb_count_one < 6)) begin
         // add a stuffing bit
+        tb_stuffing = 1;
+        tb_count_one = 0;
         tb_d_plus =  ~tb_d_plus;
         tb_d_minus = ~tb_d_plus;
         #(CLK_PERIOD * 8);
+        tb_stuffing = 0;
         tb_bit_num ++;
-        tb_bit_num = 0;
+  
       end
   end
   endtask
@@ -198,6 +187,8 @@ module tb_usb_receiver ();
     tb_bit_num = 0;
     tb_test_num = 0;
     tb_expected_PID = '1;
+    tb_count_one = 0;
+    tb_stuffing = 0;
 
 
     // test case 1 reset DUT
@@ -394,6 +385,31 @@ module tb_usb_receiver ();
     send_PID(tb_expected_PID);
     check_PID(tb_expected_PID);
     send_eop();
+
+    // test case 10 bit stuffing
+    tb_test_num++;
+    tb_test_description = "bit stuffing";
+    tb_bit_num = 0;
+    reset_dut();
+    #(CLK_PERIOD * 3);
+
+    send_sync();
+    tb_expected_PID = 4'b1011;
+    send_PID(tb_expected_PID);
+    check_PID(tb_expected_PID);
+    tb_test_byte = 8'b11111111;
+    send_byte(tb_test_byte);
+    tb_test_byte = 8'b11101111;
+    send_byte(tb_test_byte);
+    tb_test_byte = 8'b11001111;
+    send_byte(tb_test_byte);
+    send_eop();
+    #(CLK_PERIOD * 3);
+    read_fifo(8'b11111111);
+    #(CLK_PERIOD);
+    read_fifo(8'b11101111);
+    #(CLK_PERIOD);
+    read_fifo(8'b11001111);
     
   end
 
