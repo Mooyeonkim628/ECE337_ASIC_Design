@@ -6,20 +6,25 @@ module rcu (
   input logic shift_enable,
   input logic [7:0] rcv_data,
   input logic byte_received,
+  input logic PID_err,
   output logic rcving,
   output logic w_enable,
-  output logic r_error
+  output logic r_error,
+  output logic PID_clear,
+  output logic PID_set
 );
   localparam SYNC_BYTE = 8'b10000000;
 
-  typedef enum bit[3:0] {IDLE, SYN, WAIT, RCV, WRITE, EOP, EEOP, ERR, EIDLE} stateType;
+  typedef enum bit[3:0] {IDLE, SYN, WAIT, RCV, PID_RCV, PID_WRITE, PID_CHECK, WRITE, EOP, EEOP, ERR, EIDLE} stateType;
   stateType state;
   stateType next_state;
 
-  logic [2:0] out; // [rcving, w_enable, r_error]
-  assign rcving = out[2];
-  assign w_enable = out[1];
-  assign r_error = out[0];
+  logic [4:0] out; // [rcving, w_enable, r_error]
+  assign rcving = out[4];
+  assign w_enable = out[3];
+  assign r_error = out[2];
+  assign PID_clear = out[1];
+  assign PID_set = out[0]l;
 
   always_ff @(posedge clk, negedge n_rst) begin
     if (n_rst == 0) begin
@@ -39,9 +44,24 @@ module rcu (
       end
       SYN: begin
         if((rcv_data == SYNC_BYTE) && byte_received)
-          next_state = WAIT;
+          next_state = PID_RCV;
         else if((rcv_data != SYNC_BYTE) && byte_received)
           next_state = ERR;
+      end
+      PID_RCV: begin
+        if(shift_enable && eop)
+          next_state = EEOP;
+        else if(byte_received)
+          next_state = PID_WRITE;
+      end
+      PID_WRITE: begin
+        next_state = PID_CHECK;
+      end
+      PID_CHECK: begin
+        if(PID_err)
+          next_state = ERR;
+        else
+          next_state = WAIT;
       end
       WAIT: begin
         if(shift_enable && !eop)
@@ -85,28 +105,37 @@ module rcu (
         out = '0;
       end
       SYN: begin
-        out = 3'b100;
+        out = 3'b10010;
+      end
+      PID_RCV: begin
+        out = 3'b10000;
+      end
+      PID_WRITE: begin
+        out = 3'b10001;
+      end
+      PID_CHECK: begin
+        out = 3'b10000;
       end
       WAIT: begin
-        out = 3'b100;
+        out = 3'b10000;
       end
       RCV: begin
-        out = 3'b100;
+        out = 3'b10000;
       end
       WRITE: begin
-        out = 3'b110;
+        out = 3'b11000;
       end
       EEOP: begin
-        out = 3'b101;
+        out = 3'b10100;
       end
       EIDLE: begin
-        out = 3'b001;
+        out = 3'b00100;
       end
       EOP: begin
-        out = 3'b100;
+        out = 3'b10000;
       end
       ERR: begin
-        out = 3'b101;
+        out = 3'b10100;
       end
     endcase
   end

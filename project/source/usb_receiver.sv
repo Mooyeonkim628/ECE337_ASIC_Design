@@ -8,7 +8,8 @@ module usb_receiver (
   output logic empty,
   output logic full,
   output logic rcving,
-  output logic r_error
+  output logic r_error,
+  output logic [3:0] PID
 );
   logic d_plus_sync;
   logic d_minus_sync;
@@ -18,6 +19,9 @@ module usb_receiver (
   logic shift_enable;
   logic [7:0] rcv_data;
   logic w_enable;
+  logic PID_err;
+  logic PID_clear;
+  logic PID_set;
 
   sync_high synchronizer_high (
     .clk(clk),
@@ -80,9 +84,12 @@ module usb_receiver (
     .shift_enable(shift_enable),
     .rcv_data(rcv_data),
     .byte_received(byte_received),
+    .PID_err(PID_err),
     .rcving(rcving),
     .w_enable(w_enable),
-    .r_error(r_error)
+    .r_error(r_error),
+    .PID_clear(PID_clear),
+    .PID_set(PID_set)
   );
 
   rx_fifo fifo (
@@ -96,5 +103,14 @@ module usb_receiver (
     .full(full)
   );
 
+  PID_detect PID_detector (
+    .clk(clk),
+    .n_rst(n_rst),
+    .rcv_data(rcv_data),
+    .PID_clear(PID_clear),
+    .PID_set(PID_set),
+    .PID(PID),
+    .PID_err(PID_err)
+  )
   
 endmodule
