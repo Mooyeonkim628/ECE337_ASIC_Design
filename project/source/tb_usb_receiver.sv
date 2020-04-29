@@ -14,6 +14,7 @@ module tb_usb_receiver ();
   logic tb_rcving;
   logic tb_r_error;
   logic [7:0] tb_test_byte;
+  logic [3:0] tb_PID;
 
   integer tb_bit_num;
   integer tb_test_num;
@@ -55,6 +56,14 @@ module tb_usb_receiver ();
   task send_sync;
   begin
     send_byte(8'b10000000);
+  end
+  endtask
+
+  task send_PID;
+    input logic [3:0]PID;
+    input logic expected_PID_ERR;
+  begin
+    send_byte({~PID, PID});
   end
   endtask
 
@@ -126,7 +135,8 @@ module tb_usb_receiver ();
     .empty(tb_empty),
     .full(tb_full),
     .rcving(tb_rcving),
-    .r_error(tb_r_error) 
+    .r_error(tb_r_error),
+    .PID(tb_PID)
   );
   
 
@@ -156,6 +166,7 @@ module tb_usb_receiver ();
 
     tb_test_byte = 8'b01010101;
     send_sync();
+    send_PID(4'b0001);
     send_byte(tb_test_byte);
     send_eop();
     #(CLK_PERIOD * 3);
@@ -169,6 +180,7 @@ module tb_usb_receiver ();
     #(CLK_PERIOD * 3);
 
     send_sync();
+    send_PID(4'b0001);
     tb_test_byte = 8'b00000000;
     send_byte(tb_test_byte);
     tb_test_byte = 8'b01000000;
@@ -199,6 +211,7 @@ module tb_usb_receiver ();
     send_bit(0);
     send_bit(0);
     tb_test_byte = 8'b01000000;
+    send_PID(4'b0001);
     send_byte(tb_test_byte);
     send_eop();
     #(CLK_PERIOD * 8);
@@ -211,6 +224,7 @@ module tb_usb_receiver ();
     #(CLK_PERIOD * 3);
 
     send_sync();
+    send_PID(4'b0001);
     send_bit(0);
     send_bit(0);
     send_bit(0);
@@ -223,19 +237,48 @@ module tb_usb_receiver ();
 
     //immediate another packet 
     tb_test_num++;
-    tb_test_description = " EOP err case";
+    tb_test_description = "immediate another packet";
     tb_bit_num = 0;
     reset_dut();
     #(CLK_PERIOD * 3);
 
     send_sync();
+    send_PID(4'b0001);
     send_eop();
+
     send_sync();
+    send_PID(4'b0001);
     tb_test_byte = 8'b10000001;
     send_byte(tb_test_byte);
     send_eop();
     read_fifo(tb_test_byte);
 
+    //incorrect PID err case 
+    tb_test_num++;
+    tb_test_description = "incorrect PID err case";
+    tb_bit_num = 0;
+    reset_dut();
+    #(CLK_PERIOD * 3);
+
+    send_sync();
+    send_PID(4'b1111);
+    tb_test_byte = 8'b10000001;
+    send_byte(tb_test_byte);
+    send_eop();
+    
+    //EOP during PID_RCV err case 
+    tb_test_num++;
+    tb_test_description = "EOP during PID_RCV err case";
+    tb_bit_num = 0;
+    reset_dut();
+    #(CLK_PERIOD * 3);
+
+    send_sync();
+    send_bit(1);
+    send_bit(1);
+    send_bit(0);
+    send_bit(1);
+    send_eop();
 
     
   end
