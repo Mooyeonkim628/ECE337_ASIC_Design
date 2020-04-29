@@ -3,6 +3,7 @@ module timer (
   input logic n_rst,
   input logic d_edge,
   input logic rcving,
+  input logic stuff_bit
   output logic shift_enable,
   output logic byte_received
 );
@@ -60,6 +61,10 @@ module timer (
       end
   end
 
+
+  logic bit_count_enable;
+  assign bit_count_enable = shift_enable & ~stuff_bit;
+
   flex_counter #(
     .NUM_CNT_BITS(4)
   )
@@ -68,7 +73,7 @@ module timer (
     .clk(clk),
     .n_rst(n_rst && rcving),
     .clear(1'b0),
-    .count_enable(shift_enable),
+    .count_enable(bit_count_enable),
     .rollover_val(4'd8),
     .rollover_flag(byte_received)
   );

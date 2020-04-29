@@ -17,6 +17,7 @@ module tb_usb_receiver ();
   logic [3:0] tb_PID;
   logic [3:0] tb_expected_PID;
 
+  integer tb_count_one;
   integer tb_bit_num;
   integer tb_test_num;
   string tb_test_description;
@@ -40,16 +41,28 @@ module tb_usb_receiver ();
   task send_byte;
     input logic [7:0] target;
     integer i;
+    integer count_one;
   begin
     @(posedge tb_clk);
     tb_bit_num = 0;
     for(i = 0; i < 8; i++ ) begin
+      if(target[i]) begin
+        tb_count_one++;
+      end
       if(target[i] == 0) begin
         tb_d_plus =  ~tb_d_plus;
         tb_d_minus = ~tb_d_plus;
       end
       #(CLK_PERIOD * 8);
       tb_bit_num ++;
+      if(!(tb_count_one < 6)) begin
+        // add a stuffing bit
+        tb_d_plus =  ~tb_d_plus;
+        tb_d_minus = ~tb_d_plus;
+        #(CLK_PERIOD * 8);
+        tb_bit_num ++;
+        tb_bit_num = 0;
+      end
     end
   end
   endtask
@@ -86,12 +99,25 @@ module tb_usb_receiver ();
   task send_bit;
     input logic target;
   begin
+    if(target) begin
+      tb_count_one++;
+    end
+
     if(target == 0) begin
         tb_d_plus =  ~tb_d_plus;
         tb_d_minus = ~tb_d_plus;
     end
     #(CLK_PERIOD * 8);
     tb_bit_num ++;
+
+    if(!(tb_count_one < 6)) begin
+        // add a stuffing bit
+        tb_d_plus =  ~tb_d_plus;
+        tb_d_minus = ~tb_d_plus;
+        #(CLK_PERIOD * 8);
+        tb_bit_num ++;
+        tb_bit_num = 0;
+      end
   end
   endtask
 
