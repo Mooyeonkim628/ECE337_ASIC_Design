@@ -16,7 +16,7 @@ module bit_stuffer_detect (
     .n_rst(n_rst),
     .clear(clear),
     .count_enable(shift_enable),
-    .rollover_val(4'd6),
+    .rollover_val(3'd6),
     .rollover_flag(stuff_bit)
   );
 endmodule
