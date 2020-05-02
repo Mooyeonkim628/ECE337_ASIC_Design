@@ -288,9 +288,9 @@ module tb_usb_receiver ();
     check_PID(tb_expected_PID);
     send_eop();
 
-    //test case 6 immediate another packet with DIP change
+    //test case 6 immediate another packet with PID change
     tb_test_num++;
-    tb_test_description = "immediate another packet with DIP change";
+    tb_test_description = "immediate another packet with PID change";
     tb_bit_num = 0;
     reset_dut();
     #(CLK_PERIOD * 3);
