@@ -399,7 +399,7 @@ module tb_usb_receiver ();
     check_PID(tb_expected_PID);
     tb_test_byte = 8'b11111111;
     send_byte(tb_test_byte);
-    tb_test_byte = 8'b11101111;
+    tb_test_byte = 8'b11110111;
     send_byte(tb_test_byte);
     tb_test_byte = 8'b11001111;
     send_byte(tb_test_byte);
@@ -407,7 +407,7 @@ module tb_usb_receiver ();
     #(CLK_PERIOD * 3);
     read_fifo(8'b11111111);
     #(CLK_PERIOD);
-    read_fifo(8'b11101111);
+    read_fifo(8'b11110111);
     #(CLK_PERIOD);
     read_fifo(8'b11001111);
     
