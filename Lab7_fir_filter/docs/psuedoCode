@@ -1,0 +1,35 @@
+r1 = sample1
+r2 = sample2
+r3 = sample3
+r4 = sample4
+r5 = temp
+r6 = F0
+r7 = F1
+r8 = F2
+r9 = F3
+
+IDLE: if(!dr) goto IDLE;
+STORE: if(!dr) goto EIDLE;
+       r5 = data;
+       err = 0;
+ZERO: r0 = 0;
+SORT1: r4 = r3
+SORT2: r3 = r2
+SORT3: r2 = r1
+SORT4: r1 = r5
+MUL1: r5 = r4 * r9
+ADD1: r0 = r0 + r5
+      if(overflow) goto EIDLE
+MUL2: r5 = r3 * r8
+SUB2: r0 = r0 - r5
+      if(overflow) goto EIDLE
+MUL3: r5 = r2 * r7
+ADD3: r0 = r0 + r5
+      if(overflow) goto EIDLE
+MUL4: r5 = r1 * r6
+SUB4: r0 = r0 - r5
+      if(overflow) goto EIDLE
+      else goto IDLE
+EIDLE: err = 1
+       if(dr) goto STORE
+       if(!dr) goto EIDLE
