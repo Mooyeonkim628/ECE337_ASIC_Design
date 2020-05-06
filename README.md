@@ -1,1 +1,1 @@
-# ece337
+# ECE337 ASIC Design Lab
